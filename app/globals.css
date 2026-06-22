@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
+/* ─── Brand design tokens ──────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper:        #F7F4EF;  /* warm off-white background */
+  --paper-deep:   #EFEAE1;  /* slightly deeper surface   */
+  --surface:      #FFFFFF;
+  --ink:          #1A1714;  /* near-black text           */
+  --ink-soft:     #6B6259;  /* muted text                */
+  --line:         #E4DDD2;  /* warm borders              */
+
+  --brand:        #1C5240;  /* deep pine green           */
+  --brand-deep:   #143C2F;
+  --brand-mint:   #7FB89C;  /* soft mint accent          */
+  --brand-gold:   #E0A93B;  /* warm gold pop             */
+  --clay:         #C2603E;  /* warm clay (warnings/pop)  */
 }
 
+/* Expose tokens to Tailwind v4 utilities (bg-brand, text-ink, etc.) */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper:      var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-surface:    var(--surface);
+  --color-ink:        var(--ink);
+  --color-ink-soft:   var(--ink-soft);
+  --color-line:       var(--line);
+  --color-brand:      var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-mint: var(--brand-mint);
+  --color-brand-gold: var(--brand-gold);
+  --color-clay:       var(--clay);
+  --font-display:     var(--font-display);
+  --font-sans:        var(--font-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base ─────────────────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
 }
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--paper);
+}
+
+/* ─── Grain overlay (subtle, award-style texture) ──────────────────────────── */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─── Entrance animations ──────────────────────────────────────────────────── */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.rise   { animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.fade   { animation: fade 0.9s ease both; }
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+.delay-4 { animation-delay: 0.32s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .fade { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ─── Marquee (scrolling destination ribbon) ───────────────────────────────── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 40s linear infinite;
+}
+.marquee-mask:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* ─── MapLibre theming (OpenFreeMap tiles) ─────────────────────────────────── */
+.maplibregl-popup-content {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 40px -8px rgb(26 23 20 / 0.2);
+  padding: 12px 14px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+.maplibregl-popup-close-button {
+  font-size: 18px;
+  color: var(--ink-soft);
+  padding: 2px 7px;
+}
+.maplibregl-ctrl-group {
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 16px -4px rgb(26 23 20 / 0.18) !important;
+}
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+  background: rgb(247 244 239 / 0.8) !important;
+}
+
+/* ─── Reusable component classes ───────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.85rem;
+  background: var(--brand);
+  color: var(--paper);
+  padding: 0.7rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.2s;
+}
+.btn-primary:hover { background: var(--brand-deep); transform: translateY(-1px); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.85rem;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 0.7rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.btn-ghost:hover { border-color: var(--brand-mint); transform: translateY(-1px); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 44px -16px rgb(26 23 20 / 0.22);
 }

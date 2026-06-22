@@ -1,65 +1,237 @@
-import Image from "next/image";
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { SearchBar } from '@/components/search/search-bar'
+import { EV_STATIONS, DISTRICT_DIRECTORY } from '@/lib/data/ev-stations'
+import { DESTINATIONS, getDestination } from '@/lib/data/destinations'
+import type { DestinationWifiSummary } from '@/lib/types/database'
 
-export default function Home() {
+export const revalidate = 3600
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
+
+const FEATURED_SLUGS = ['ooty', 'kodaikanal', 'munnar', 'coorg', 'chikmagalur', 'wayanad']
+
+const MARQUEE = [
+  'Coonoor', 'Munnar', 'Coorg', 'Kodaikanal', 'Chikmagalur', 'Wayanad',
+  'Ooty', 'Yercaud', 'Valparai', 'Araku Valley', 'Vagamon', 'Sakleshpur',
+]
+
+function elevationTone(e: number): string {
+  if (e > 2000) return 'from-[#23413a] to-[#0f2a22]'
+  if (e > 1500) return 'from-[#1c5240] to-[#143c2f]'
+  if (e > 1000) return 'from-[#2a6049] to-[#1c5240]'
+  return 'from-[#357a5b] to-[#1c5240]'
+}
+
+export default async function HomePage() {
+  const supabase = await createClient()
+
+  // Catalogue is the source of truth; DB adds optional WiFi data, joined by slug.
+  const [{ data: dbDests }, { data: wifiData }] = await Promise.all([
+    supabase.from('destinations').select('id, slug'),
+    supabase.from('destination_wifi_summary').select('*'),
+  ])
+
+  const wifiById = Object.fromEntries(
+    (wifiData ?? []).map((w: DestinationWifiSummary) => [w.destination_id, w]),
+  )
+  const wifiBySlug: Record<string, DestinationWifiSummary> = {}
+  for (const d of (dbDests ?? []) as { id: string; slug: string }[]) {
+    const w = wifiById[d.id] as DestinationWifiSummary | undefined
+    if (w) wifiBySlug[d.slug] = w
+  }
+
+  const destCount = DESTINATIONS.length
+  const featuredList = FEATURED_SLUGS.map((s) => getDestination(s)!).filter(Boolean)
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div>
+      {/* ─── HERO ───────────────────────────────────────────────────────────── */}
+      <section className="grain relative overflow-hidden bg-[var(--brand-deep)]">
+        {/* glowing orbs */}
+        <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-[var(--brand-mint)] opacity-20 blur-[120px]" />
+        <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-[var(--brand-gold)] opacity-15 blur-[120px]" />
+
+        {/* layered mountain silhouettes */}
+        <svg viewBox="0 0 1200 240" preserveAspectRatio="none" className="absolute bottom-0 left-0 w-full opacity-[0.12]" aria-hidden="true">
+          <path d="M0,240 L0,150 L200,60 L380,130 L560,40 L760,120 L960,30 L1100,90 L1200,50 L1200,240 Z" fill="white" />
+        </svg>
+        <svg viewBox="0 0 1200 200" preserveAspectRatio="none" className="absolute bottom-0 left-0 w-full opacity-[0.18]" aria-hidden="true">
+          <path d="M0,200 L0,170 L160,110 L340,160 L520,90 L720,150 L900,100 L1080,150 L1200,120 L1200,200 Z" fill="white" />
+        </svg>
+
+        <div className="relative z-10 mx-auto max-w-6xl px-5 py-24 sm:py-32">
+          <div className="rise inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-[var(--brand-mint)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-mint)]" />
+            Community-verified · {destCount ?? '28'}+ destinations · Updated by real travellers
+          </div>
+
+          <h1 className="rise delay-1 mt-6 max-w-3xl font-display text-5xl leading-[1.02] tracking-tight text-white sm:text-7xl">
+            Work from anywhere.<br />
+            <span className="italic text-[var(--brand-gold)]">Worry about nothing.</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="rise delay-2 mt-6 max-w-xl text-lg leading-relaxed text-white/70">
+            WiFi speeds, ghat-road warnings, fuel and EV charging stops, and work-friendly cafes
+            for South India&apos;s best hill stations - researched once, so you don&apos;t have to.
           </p>
+
+          <div className="rise delay-3 mt-9 max-w-3xl">
+            <SearchBar />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* scrolling destination marquee */}
+        <div className="marquee-mask relative z-10 border-t border-white/10 py-4">
+          <div className="marquee-track gap-8 text-sm font-medium text-white/40">
+            {[...MARQUEE, ...MARQUEE].map((name, i) => (
+              <span key={i} className="flex items-center gap-8">
+                {name}
+                <span className="text-[var(--brand-gold)]/50">✦</span>
+              </span>
+            ))}
+          </div>
         </div>
-      </main>
+      </section>
+
+      <div className="mx-auto max-w-6xl px-5 py-16 space-y-20">
+        {/* ─── FEATURED DESTINATIONS ────────────────────────────────────────── */}
+        <section className="space-y-7">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">Where to perch</p>
+              <h2 className="mt-1.5 font-display text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
+                Popular remote-work destinations
+              </h2>
+            </div>
+            <Link href="/destinations" className="hidden text-sm font-medium text-[var(--brand)] hover:text-[var(--brand-deep)] sm:block">
+              View all →
+            </Link>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredList.map((d, i) => {
+              const wifi = wifiBySlug[d.slug]
+              return (
+                <Link
+                  key={d.slug}
+                  href={`/destinations/${d.slug}`}
+                  className={`card card-hover rise group overflow-hidden delay-${Math.min(i + 1, 4)}`}
+                >
+                  <div className={`relative h-32 bg-gradient-to-br ${elevationTone(d.elevationM)} p-5`}>
+                    <div className="flex h-full flex-col justify-between">
+                      <div className="flex items-start justify-between">
+                        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/55">
+                          {d.state}
+                        </span>
+                        <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+                          {d.elevationM.toLocaleString()}m
+                        </span>
+                      </div>
+                      <h3 className="font-display text-2xl text-white">{d.name}</h3>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 p-5">
+                    <p className="line-clamp-2 text-sm leading-relaxed text-[var(--ink-soft)]">
+                      {d.summary}
+                    </p>
+                    <div className="flex items-center justify-between pt-1">
+                      {wifi ? (
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)]">
+                          <span className="h-2 w-2 rounded-full bg-[var(--brand-mint)]" />
+                          {wifi.avg_download_mbps} Mbps avg
+                        </span>
+                      ) : (
+                        <span className="text-sm text-[var(--ink-soft)]">Best: {d.bestSeason.split('(')[0].trim()}</span>
+                      )}
+                      <span className="text-[var(--line)] transition-colors group-hover:text-[var(--brand)]">→</span>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* ─── EV CHARGING TEASER ───────────────────────────────────────────── */}
+        <section className="grain relative overflow-hidden rounded-3xl bg-[var(--ink)] p-8 sm:p-12">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-64 w-64 rounded-full bg-[var(--brand-gold)] opacity-10 blur-[100px]" />
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand-gold)]">New</p>
+              <h2 className="font-display text-3xl tracking-tight text-white sm:text-4xl">
+                Driving electric? <span className="italic text-[var(--brand-mint)]">We mapped the chargers.</span>
+              </h2>
+              <p className="max-w-md text-white/65">
+                Charging stops across {DISTRICT_DIRECTORY.length} South Indian districts - Chennai,
+                Puducherry, Coimbatore, the Nilgiris, Coorg, Munnar and more. Curated pins plus a
+                live link to the full list in every district.
+              </p>
+              <Link href="/charging" className="btn-primary mt-2 bg-[var(--brand-gold)] text-[var(--ink)] hover:bg-[#cf9a2f]">
+                Open the charging map →
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { n: EV_STATIONS.filter((s) => s.speed === 'fast').length, l: 'Fast chargers' },
+                { n: DISTRICT_DIRECTORY.length, l: 'Districts' },
+                { n: `${EV_STATIONS.length}+`, l: 'Curated stops' },
+              ].map((s) => (
+                <div key={s.l} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
+                  <p className="font-display text-3xl text-white">{s.n}</p>
+                  <p className="mt-1 text-[11px] leading-tight text-white/50">{s.l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── HOW IT WORKS ─────────────────────────────────────────────────── */}
+        <section className="space-y-8">
+          <div className="max-w-xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">The idea</p>
+            <h2 className="mt-1.5 font-display text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
+              One trip report. Two guides, kept fresh.
+            </h2>
+          </div>
+          <div className="grid gap-px overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
+            {[
+              { icon: '✶', title: 'One form, two datasets', body: 'A single trip report fills the destination guide (WiFi, cafes, power) and the journey guide (route, ghat warnings, fuel & EV stops) at the same time.' },
+              { icon: '◷', title: 'Dated, tagged data', body: 'Every WiFi reading carries a date and carrier tag, so you know exactly how fresh it is - not a stale screenshot from years ago.' },
+              { icon: '⤳', title: 'Any way you travel', body: 'Car, bike, bus, train or EV. Each destination collects separate journey reports per mode, with mode-specific warnings and tips.' },
+            ].map((item) => (
+              <div key={item.title} className="space-y-3 bg-[var(--surface)] p-7">
+                <span className="font-display text-3xl text-[var(--brand)]">{item.icon}</span>
+                <p className="font-semibold text-[var(--ink)]">{item.title}</p>
+                <p className="text-sm leading-relaxed text-[var(--ink-soft)]">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── CTA ──────────────────────────────────────────────────────────── */}
+        <section className="grain relative overflow-hidden rounded-3xl bg-[var(--brand)] px-8 py-12 sm:px-12">
+          <svg viewBox="0 0 200 200" className="pointer-events-none absolute right-0 top-0 h-full opacity-[0.08]" aria-hidden="true">
+            <path d="M0,200 L50,90 L90,140 L140,40 L180,100 L200,30 L200,200 Z" fill="white" />
+          </svg>
+          <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-white">
+              <h2 className="font-display text-3xl tracking-tight sm:text-4xl">Just back from the hills?</h2>
+              <p className="mt-2 max-w-md text-white/75">
+                Your WiFi speed test and road notes would help hundreds planning the same trip.
+                It takes about three minutes.
+              </p>
+            </div>
+            <Link href="/contribute" className="btn-ghost shrink-0 text-base">
+              Add a trip report →
+            </Link>
+          </div>
+        </section>
+      </div>
     </div>
-  );
+  )
 }
