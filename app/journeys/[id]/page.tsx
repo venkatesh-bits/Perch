@@ -1,22 +1,16 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import type { Waypoint } from '@/lib/types/database'
+import { getJourneyById, getJourneyMeta } from '@/lib/queries/journeys'
 
 export const revalidate = 3600
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('journeys')
-    .select('origin_name, transport_mode, destination:destinations(name)')
-    .eq('id', id)
-    .maybeSingle()
+  const data = await getJourneyMeta(id)
 
   if (!data) return { title: 'Journey not found' }
-  const dest = data.destination as { name: string } | { name: string }[] | null
+  const dest = data.destination
   const destName = (Array.isArray(dest) ? dest[0]?.name : dest?.name) ?? 'a hill station'
   const title = `${data.origin_name} to ${destName} by ${data.transport_mode}`
   return {
@@ -40,21 +34,9 @@ const RELIABILITY_LABELS: Record<string, string> = {
 
 export default async function JourneyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-
-  const { data: journey } = await supabase
-    .from('journeys')
-    .select('*, destination:destinations(name, slug, elevation_m)')
-    .eq('id', id)
-    .single()
+  const { journey, waypoints } = await getJourneyById(id)
 
   if (!journey) notFound()
-
-  const { data: waypoints } = await supabase
-    .from('waypoints')
-    .select('*')
-    .eq('journey_id', id)
-    .order('order_index')
 
   const isRoadMode = ['car', 'bike'].includes(journey.transport_mode)
   const isTransitMode = ['bus', 'train'].includes(journey.transport_mode)
@@ -163,7 +145,7 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
         ) : (
           <div className="relative pl-6">
             <div className="absolute left-2 top-0 bottom-0 w-px bg-stone-200" />
-            {(waypoints as Waypoint[]).map((w, i) => (
+            {waypoints.map((w) => (
               <div key={w.id} className="relative mb-4">
                 <span className="absolute -left-4 flex h-5 w-5 items-center justify-center rounded-full bg-white border border-stone-200 text-xs">
                   {WAYPOINT_ICONS[w.type]}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useId } from 'react'
+import { useState, useRef, useEffect, useId, useMemo } from 'react'
 import { searchPlaces, type Place } from '@/lib/data/places'
 
 interface Props {
@@ -17,7 +17,7 @@ export function PlaceCombobox({ placeholder, places, onSelect, icon }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const listId = useId()
 
-  const results = searchPlaces(query, places)
+  const results = useMemo(() => searchPlaces(query, places), [query, places])
 
   // Close on outside click
   useEffect(() => {

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { EvExplorer } from '@/components/maps/ev-explorer'
+import { EvExplorerLazy } from '@/components/maps/ev-explorer-lazy'
 import { DISTRICT_DIRECTORY } from '@/lib/data/ev-stations'
 import { EV_TOTALS } from '@/lib/data/ev-stations-all'
 
@@ -43,7 +43,7 @@ export default function ChargingPage() {
       </section>
 
       <div className="mx-auto max-w-6xl px-5 py-12">
-        <EvExplorer />
+        <EvExplorerLazy />
 
         {/* Disclaimer */}
         <p className="mt-10 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm leading-relaxed text-[var(--ink-soft)]">

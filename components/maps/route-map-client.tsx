@@ -1,7 +1,16 @@
 'use client'
 
-import { RouteMap } from './route-map'
+import dynamic from 'next/dynamic'
 import { haversineKm } from '@/lib/data/places'
+
+// Defer the MapLibre bundle (~200KB) until this client wrapper renders.
+const RouteMap = dynamic(
+  () => import('./route-map').then((mod) => mod.RouteMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-[var(--paper-deep)]" />,
+  },
+)
 
 interface Props {
   origin: { lat: number; lng: number; label?: string }

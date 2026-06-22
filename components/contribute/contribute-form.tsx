@@ -6,18 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { type z } from 'zod'
 import { contributionSchema } from '@/lib/validations/contribution'
 import { createClient } from '@/lib/supabase/client'
+import { StepJourney } from './step-journey'
+import { StepWifi } from './step-wifi'
+import { StepWorkSpot } from './step-work-spot'
+import { StepReview } from './step-review'
 
 interface DestOption { slug: string; name: string; state: string }
 
 const STEPS = ['Journey', 'WiFi & Power', 'Work spots', 'Review'] as const
-const MODES = ['car', 'bike', 'bus', 'train', 'mixed'] as const
-const MODE_LABELS: Record<string, string> = {
-  car: '🚗 Car',
-  bike: '🏍 Bike',
-  bus: '🚌 Bus',
-  train: '🚂 Train',
-  mixed: '🔀 Mixed',
-}
 
 interface Props {
   destinations: DestOption[]
@@ -175,225 +171,24 @@ export default function ContributeForm({ destinations, prefillSlug }: Props) {
 
       {/* ─── Step 0: Journey ──────────────────────────────────────────── */}
       {step === 0 && (
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Starting from" error={errors.journey?.origin_name?.message}>
-              <input
-                {...register('journey.origin_name')}
-                placeholder="e.g. Chennai"
-                className={input()}
-              />
-            </Field>
-            <Field label="Destination" error={errors.journey?.destination_slug?.message}>
-              <select {...register('journey.destination_slug')} className={input()}>
-                <option value="">Select destination</option>
-                {Object.entries(destsByState).map(([state, list]) => (
-                  <optgroup key={state} label={state}>
-                    {list.map((d) => (
-                      <option key={d.slug} value={d.slug}>{d.name}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          <Field label="Trip date" error={errors.journey?.trip_date?.message}>
-            <input type="date" {...register('journey.trip_date')} className={input('max-w-xs')} />
-          </Field>
-
-          <Field label="How did you travel?">
-            <div className="flex flex-wrap gap-2">
-              {MODES.map((m) => (
-                <label key={m} className="cursor-pointer">
-                  <input type="radio" {...register('journey.transport_mode')} value={m} className="sr-only" />
-                  <span className={`rounded-full border px-3 py-1.5 text-sm select-none ${
-                    mode === m
-                      ? 'border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)] font-medium'
-                      : 'border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--brand-mint)]'
-                  }`}>
-                    {MODE_LABELS[m]}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </Field>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Distance (km)" error={errors.journey?.distance_km?.message}>
-              <input type="number" {...register('journey.distance_km')} placeholder="e.g. 530" className={input()} />
-            </Field>
-            <Field label="Duration (hours)" error={errors.journey?.typical_duration_hours?.message}>
-              <input type="number" step="0.5" {...register('journey.typical_duration_hours')} placeholder="e.g. 8.5" className={input()} />
-            </Field>
-          </div>
-
-          {/* Car / bike fields */}
-          {isRoad && (
-            <div className="space-y-4 rounded-xl bg-[var(--paper)] p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-soft)]">Road details</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Road surface (1-5)" error={errors.journey?.road_surface_rating?.message}>
-                  <input type="number" min={1} max={5} {...register('journey.road_surface_rating')} placeholder="1 = terrible, 5 = excellent" className={input()} />
-                </Field>
-                <Field label="Fuel stop every (km)" error={errors.journey?.fuel_stop_spacing_km?.message}>
-                  <input type="number" {...register('journey.fuel_stop_spacing_km')} placeholder="e.g. 80" className={input()} />
-                </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Ghat sections">
-                  <input type="number" min={0} {...register('journey.ghat_sections_count')} placeholder="0 if no ghats" className={input()} />
-                </Field>
-                <Field label="EV charging stops?">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" {...register('journey.has_ev_charging_stops')} className="rounded" />
-                    Yes, there are EV charging stops
-                  </label>
-                </Field>
-              </div>
-              <Field label="Ghat warnings (optional)">
-                <textarea
-                  {...register('journey.ghat_warnings')}
-                  rows={2}
-                  placeholder="e.g. Mettupalayam-Coonoor: 40 hairpin bends, narrow road, avoid at night"
-                  className={input()}
-                />
-              </Field>
-            </div>
-          )}
-
-          {/* Bus / train fields */}
-          {isTransit && (
-            <div className="space-y-4 rounded-xl bg-[var(--paper)] p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-soft)]">Transit details</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Operator">
-                  <input {...register('journey.operator_name')} placeholder="e.g. SETC, Indian Railways" className={input()} />
-                </Field>
-                <Field label="Schedule reliability">
-                  <select {...register('journey.schedule_reliability')} className={input()}>
-                    <option value="">Select…</option>
-                    <option value="very_reliable">Very reliable</option>
-                    <option value="mostly_reliable">Mostly reliable</option>
-                    <option value="unreliable">Unreliable</option>
-                  </select>
-                </Field>
-              </div>
-              <Field label="Booking notes">
-                <textarea
-                  {...register('journey.booking_notes')}
-                  rows={2}
-                  placeholder="e.g. Book 2 days ahead on weekends, IRCTC tatkal available"
-                  className={input()}
-                />
-              </Field>
-            </div>
-          )}
-        </div>
+        <StepJourney
+          register={register}
+          errors={errors}
+          destsByState={destsByState}
+          mode={mode}
+          isRoad={isRoad}
+          isTransit={isTransit}
+        />
       )}
 
       {/* ─── Step 1: WiFi & Power ─────────────────────────────────────── */}
-      {step === 1 && (
-        <div className="space-y-4">
-          <p className="text-sm text-[var(--ink-soft)]">
-            If you measured your internet speed at the destination, add it here. Even one
-            Speedtest result helps others planning the same trip.
-          </p>
-          <div className="space-y-4 rounded-xl bg-[var(--paper)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-soft)]">WiFi reading (optional)</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Download (Mbps)" error={errors.wifi_reading?.download_mbps?.message}>
-                <input type="number" step="0.1" {...register('wifi_reading.download_mbps')} placeholder="e.g. 42.5" className={input()} />
-              </Field>
-              <Field label="Upload (Mbps)">
-                <input type="number" step="0.1" {...register('wifi_reading.upload_mbps')} placeholder="e.g. 18.2" className={input()} />
-              </Field>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Provider / carrier">
-                <input {...register('wifi_reading.provider')} placeholder="e.g. Jio Fiber, Airtel, BSNL" className={input()} />
-              </Field>
-              <Field label="Area within destination">
-                <input {...register('wifi_reading.locality')} placeholder="e.g. Coonoor town centre" className={input()} />
-              </Field>
-            </div>
-            <Field label="Test tool used">
-              <input {...register('wifi_reading.test_tool')} placeholder="e.g. Speedtest.net, fast.com" className={input()} />
-            </Field>
-          </div>
-        </div>
-      )}
+      {step === 1 && <StepWifi register={register} errors={errors} />}
 
       {/* ─── Step 2: Work spots ──────────────────────────────────────── */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <p className="text-sm text-[var(--ink-soft)]">
-            Worked from a cafe, coworking space, or hotel lobby? Add it so others can find it.
-          </p>
-          <div className="space-y-4 rounded-xl bg-[var(--paper)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-soft)]">Work spot (optional)</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Place name">
-                <input {...register('work_spot.name')} placeholder="e.g. Café Earthbound" className={input()} />
-              </Field>
-              <Field label="Type">
-                <select {...register('work_spot.type')} className={input()}>
-                  <option value="">Select…</option>
-                  <option value="cafe">Cafe</option>
-                  <option value="coworking">Coworking</option>
-                  <option value="library">Library</option>
-                  <option value="restaurant">Restaurant</option>
-                </select>
-              </Field>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="WiFi quality (1-5)">
-                <input type="number" min={1} max={5} {...register('work_spot.wifi_rating')} placeholder="5 = excellent" className={input()} />
-              </Field>
-              <Field label="Power outlets">
-                <select {...register('work_spot.power_outlets')} className={input()}>
-                  <option value="">Select…</option>
-                  <option value="plenty">Plenty</option>
-                  <option value="some">Some</option>
-                  <option value="few">Few</option>
-                  <option value="none">None</option>
-                </select>
-              </Field>
-              <Field label="Noise level">
-                <select {...register('work_spot.noise_level')} className={input()}>
-                  <option value="">Select…</option>
-                  <option value="quiet">Quiet</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="noisy">Noisy</option>
-                </select>
-              </Field>
-            </div>
-            <Field label="Price / notes">
-              <input {...register('work_spot.price_notes')} placeholder="e.g. Free WiFi with ₹150 min order" className={input()} />
-            </Field>
-          </div>
-        </div>
-      )}
+      {step === 2 && <StepWorkSpot register={register} errors={errors} />}
 
       {/* ─── Step 3: Review ──────────────────────────────────────────── */}
-      {step === 3 && (
-        <div className="space-y-4">
-          <p className="text-sm text-[var(--ink-soft)]">
-            Almost done. Any general notes about the trip?
-          </p>
-          <Field label="General notes (optional)">
-            <textarea
-              {...register('general_notes')}
-              rows={4}
-              placeholder="Anything else worth knowing - road closures, seasonal tips, accommodation recommendations…"
-              className={input()}
-            />
-          </Field>
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
-        </div>
-      )}
+      {step === 3 && <StepReview register={register} submitError={error} />}
 
       {/* Navigation */}
       <div className="flex justify-between pt-2">
@@ -428,26 +223,4 @@ export default function ContributeForm({ destinations, prefillSlug }: Props) {
       </div>
     </form>
   )
-}
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string
-  error?: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-[var(--ink)]">{label}</label>
-      {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
-    </div>
-  )
-}
-
-function input(extra = '') {
-  return `w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] placeholder:text-[var(--ink-soft)] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-mint)]/30 ${extra}`
 }
