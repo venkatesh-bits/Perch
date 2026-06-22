@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import type { Journey, Destination } from '@/lib/types/database'
+import { getJourneys } from '@/lib/queries/journeys'
 
 export const revalidate = 3600
 
@@ -20,18 +19,7 @@ export default async function JourneysPage({
   searchParams: Promise<{ mode?: string }>
 }) {
   const { mode } = await searchParams
-  const supabase = await createClient()
-
-  let query = supabase
-    .from('journeys')
-    .select('*, destination:destinations(name, slug)')
-    .order('origin_name')
-
-  if (mode && MODES.includes(mode as typeof MODES[number])) {
-    query = query.eq('transport_mode', mode)
-  }
-
-  const { data: journeys } = await query
+  const journeys = await getJourneys(mode)
 
   return (
     <div className="space-y-6">
@@ -71,7 +59,7 @@ export default async function JourneysPage({
         </p>
       ) : (
         <div className="space-y-3">
-          {(journeys as (Journey & { destination: Destination })[]).map((j) => (
+          {journeys.map((j) => (
             <Link
               key={j.id}
               href={`/journeys/${j.id}`}

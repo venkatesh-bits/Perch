@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { SearchBar } from '@/components/search/search-bar'
 import { RouteMapClient } from '@/components/maps/route-map-client'
-import type { Journey, Destination, DestinationWifiSummary, WorkSpot } from '@/lib/types/database'
+import { getSearchResult } from '@/lib/queries/search'
 
 export const metadata: Metadata = {
   title: 'Plan a route',
@@ -47,27 +46,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     )
   }
 
-  const supabase = await createClient()
+  const { destination, wifi, workSpots, journeys: journeyList } = await getSearchResult({
+    to, toSlug: to_slug, from,
+  })
 
-  const destQuery = supabase.from('destinations').select('*')
-  const { data: matchedDests } = await (
-    to_slug
-      ? destQuery.eq('slug', to_slug)
-      : destQuery.ilike('name', `%${to.split('(')[0].trim()}%`)
-  ).limit(1)
-
-  const destination = (matchedDests?.[0] ?? null) as Destination | null
-
-  const [wifiData, workSpots, journeys] = destination
-    ? await Promise.all([
-        supabase.from('destination_wifi_summary').select('*').eq('destination_id', destination.id).single(),
-        supabase.from('work_spots').select('*').eq('destination_id', destination.id).order('wifi_rating', { ascending: false }).limit(3),
-        supabase.from('journeys').select('*').eq('destination_id', destination.id).ilike('origin_name', `%${from.split(',')[0].trim()}%`).limit(5),
-      ])
-    : [{ data: null }, { data: [] }, { data: [] }]
-
-  const wifi = wifiData?.data as DestinationWifiSummary | null
-  const journeyList = (journeys.data as Journey[]) ?? []
   const bestJourney = journeyList[0]
   const hasCoords = !!(from_lat && from_lng && to_lat && to_lng)
 
@@ -130,10 +112,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               )}
 
               {/* Work spots */}
-              {(workSpots.data as WorkSpot[])?.length > 0 && (
+              {workSpots.length > 0 && (
                 <div className="card space-y-3 p-5">
                   <p className="font-semibold text-[var(--ink)]">💻 Work-friendly spots</p>
-                  {(workSpots.data as WorkSpot[]).map((w) => (
+                  {workSpots.map((w) => (
                     <div key={w.id} className="flex items-start justify-between rounded-xl border border-[var(--line)] p-3">
                       <div>
                         <p className="text-sm font-medium text-[var(--ink)]">{w.name}</p>

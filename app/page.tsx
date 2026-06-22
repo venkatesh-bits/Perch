@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { SearchBar } from '@/components/search/search-bar'
 import { EV_STATIONS, DISTRICT_DIRECTORY } from '@/lib/data/ev-stations'
 import { DESTINATIONS, getDestination } from '@/lib/data/destinations'
-import type { DestinationWifiSummary } from '@/lib/types/database'
+import { getWifiBySlug } from '@/lib/queries/home'
 
 export const revalidate = 3600
 
@@ -27,22 +26,8 @@ function elevationTone(e: number): string {
 }
 
 export default async function HomePage() {
-  const supabase = await createClient()
-
   // Catalogue is the source of truth; DB adds optional WiFi data, joined by slug.
-  const [{ data: dbDests }, { data: wifiData }] = await Promise.all([
-    supabase.from('destinations').select('id, slug'),
-    supabase.from('destination_wifi_summary').select('*'),
-  ])
-
-  const wifiById = Object.fromEntries(
-    (wifiData ?? []).map((w: DestinationWifiSummary) => [w.destination_id, w]),
-  )
-  const wifiBySlug: Record<string, DestinationWifiSummary> = {}
-  for (const d of (dbDests ?? []) as { id: string; slug: string }[]) {
-    const w = wifiById[d.id] as DestinationWifiSummary | undefined
-    if (w) wifiBySlug[d.slug] = w
-  }
+  const wifiBySlug = await getWifiBySlug()
 
   const destCount = DESTINATIONS.length
   const featuredList = FEATURED_SLUGS.map((s) => getDestination(s)!).filter(Boolean)

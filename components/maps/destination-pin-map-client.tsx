@@ -1,6 +1,15 @@
 'use client'
 
-import { DestinationPinMap } from './route-map'
+import dynamic from 'next/dynamic'
+
+// Defer the MapLibre bundle (~200KB) until this client wrapper renders.
+const DestinationPinMap = dynamic(
+  () => import('./route-map').then((mod) => mod.DestinationPinMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-[var(--paper-deep)]" />,
+  },
+)
 
 interface Props {
   lat: number
