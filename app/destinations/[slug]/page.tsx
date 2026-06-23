@@ -1,8 +1,10 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { DestinationPinMapClient } from '@/components/maps/destination-pin-map-client'
 import { getDestination, DESTINATIONS } from '@/lib/data/destinations'
+import { destinationImage } from '@/lib/data/destination-images'
 import { OverviewTab } from '@/components/destinations/overview-tab'
 import { StaysTab } from '@/components/destinations/stays-tab'
 import {
@@ -60,10 +62,34 @@ export default async function DestinationPage({
   const dest = getDestination(slug)
   if (!dest) notFound()
 
+  const heroImg = destinationImage(slug)
+
   return (
     <div>
       {/* ─── Hero ─── */}
       <section className={`grain relative overflow-hidden bg-gradient-to-br ${elevationTone(dest.elevationM)}`}>
+        {heroImg ? (
+          <Image
+            src={heroImg.url}
+            alt={`${dest.name} landscape`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        ) : null}
+        {/* Scrim keeps the white hero text legible over any photo (bright or dark). */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/40" />
+        {heroImg ? (
+          <a
+            href={heroImg.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-2 right-3 z-20 text-[10px] text-white/70 transition-colors hover:text-white"
+          >
+            📷 {heroImg.attribution} / {heroImg.license} · Wikimedia
+          </a>
+        ) : null}
         <div className="relative z-10 mx-auto max-w-6xl px-5 py-10">
           <Link href="/destinations" className="text-xs text-white/50 transition-colors hover:text-white/80">
             ← All destinations

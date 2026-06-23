@@ -1,7 +1,9 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { chargersNearDestination, isOpenData, type AnyStation } from '@/lib/data/ev-stations-all'
 import type { HillStation } from '@/lib/data/destinations'
 import { Fact } from './ui'
+import { WeatherCard, WeatherSkeleton } from './weather-card'
 
 const CATEGORY_TAG: Record<string, string> = {
   hill_station: 'Hill station', forest: 'Forest & wildlife', gateway: 'Gateway', coastal: 'Coastal',
@@ -99,6 +101,10 @@ export function OverviewTab({ dest }: { dest: HillStation }) {
         </div>
       </div>
       <div className="space-y-3">
+        {/* Live weather streams in; the rest of the panel renders immediately. */}
+        <Suspense fallback={<WeatherSkeleton />}>
+          <WeatherCard lat={dest.lat} lng={dest.lng} name={dest.name} />
+        </Suspense>
         <Fact label="Elevation" value={`${dest.elevationM.toLocaleString()} m`} />
         <Fact label="Region" value={dest.region} />
         <Fact label="District" value={`${dest.district}, ${dest.state}`} />

@@ -2,10 +2,12 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   DESTINATIONS, DEST_STATES, DESTINATION_CATEGORIES,
   type HillStation, type DestinationCategory,
 } from '@/lib/data/destinations'
+import { destinationImage } from '@/lib/data/destination-images'
 
 interface WifiInfo { avg: number | null; count: number }
 
@@ -98,19 +100,31 @@ export function DestinationsBrowser({ wifiBySlug }: { wifiBySlug: Record<string,
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((d) => {
                 const wifi = wifiBySlug[d.slug]
+                const img = destinationImage(d.slug)
                 return (
                   <Link key={d.slug} href={`/destinations/${d.slug}`} className="card card-hover group overflow-hidden">
-                    <div className={`relative h-24 bg-gradient-to-br ${elevationTone(d.elevationM)} p-4`}>
-                      <div className="flex h-full flex-col justify-between">
+                    <div className={`relative h-32 overflow-hidden bg-gradient-to-br ${elevationTone(d.elevationM)}`}>
+                      {img ? (
+                        <Image
+                          src={img.url}
+                          alt={d.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : null}
+                      {/* Scrim keeps the white text legible over any photo. */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/20" />
+                      <div className="relative flex h-full flex-col justify-between p-4">
                         <div className="flex items-start justify-between">
-                          <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/55">
+                          <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/70">
                             {d.region}
                           </span>
-                          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+                          <span className="rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
                             {d.elevationM.toLocaleString()}m
                           </span>
                         </div>
-                        <h3 className="font-display text-xl text-white">{d.name}</h3>
+                        <h3 className="font-display text-xl text-white drop-shadow-sm">{d.name}</h3>
                       </div>
                     </div>
                     <div className="space-y-2 p-4">
