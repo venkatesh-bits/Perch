@@ -38,6 +38,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  images: {
+    // Destination photos come from Wikimedia Commons (see scripts/fetch-destination-images.ts).
+    remotePatterns: [{ protocol: 'https', hostname: 'upload.wikimedia.org' }],
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },
