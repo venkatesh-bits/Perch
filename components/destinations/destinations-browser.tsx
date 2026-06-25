@@ -8,6 +8,8 @@ import {
   type HillStation, type DestinationCategory,
 } from '@/lib/data/destinations'
 import { destinationImage } from '@/lib/data/destination-images'
+import { type CurrentWeather } from '@/lib/queries/weather'
+import { WeatherChip } from '@/components/destinations/weather-chip'
 
 interface WifiInfo { avg: number | null; count: number }
 
@@ -26,7 +28,13 @@ const CATEGORY_TAG: Record<DestinationCategory, string> = {
   coastal: 'Coastal',
 }
 
-export function DestinationsBrowser({ wifiBySlug }: { wifiBySlug: Record<string, WifiInfo> }) {
+export function DestinationsBrowser({
+  wifiBySlug,
+  weatherBySlug = {},
+}: {
+  wifiBySlug: Record<string, WifiInfo>
+  weatherBySlug?: Record<string, CurrentWeather>
+}) {
   const [query, setQuery] = useState('')
   const [stateFilter, setStateFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -91,14 +99,14 @@ export function DestinationsBrowser({ wifiBySlug }: { wifiBySlug: Record<string,
           No destinations match that search.
         </div>
       ) : (
-        grouped.map(({ state, items }) => (
+        grouped.map(({ state, items }, gi) => (
           <section key={state} className="space-y-3">
             <div className="flex items-baseline gap-3">
               <h2 className="font-display text-2xl tracking-tight text-[var(--ink)]">{state}</h2>
               <span className="text-xs text-[var(--ink-soft)]">{items.length} places</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((d) => {
+              {items.map((d, idx) => {
                 const wifi = wifiBySlug[d.slug]
                 const img = destinationImage(d.slug)
                 return (
@@ -106,9 +114,10 @@ export function DestinationsBrowser({ wifiBySlug }: { wifiBySlug: Record<string,
                     <div className={`relative h-32 overflow-hidden bg-gradient-to-br ${elevationTone(d.elevationM)}`}>
                       {img ? (
                         <Image
-                          src={img.url}
+                          src={img.thumbUrl}
                           alt={d.name}
                           fill
+                          priority={gi === 0 && idx < 3}
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
@@ -120,9 +129,12 @@ export function DestinationsBrowser({ wifiBySlug }: { wifiBySlug: Record<string,
                           <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/70">
                             {d.region}
                           </span>
-                          <span className="rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
-                            {d.elevationM.toLocaleString()}m
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <WeatherChip weather={weatherBySlug[d.slug]} />
+                            <span className="rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+                              {d.elevationM.toLocaleString()}m
+                            </span>
+                          </div>
                         </div>
                         <h3 className="font-display text-xl text-white drop-shadow-sm">{d.name}</h3>
                       </div>

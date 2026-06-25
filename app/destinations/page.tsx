@@ -1,6 +1,7 @@
 import { DestinationsBrowser } from '@/components/destinations/destinations-browser'
 import { DESTINATIONS } from '@/lib/data/destinations'
 import { getWifiBySlug } from '@/lib/queries/home'
+import { getWeatherBatch } from '@/lib/queries/weather'
 
 export const revalidate = 3600
 
@@ -11,8 +12,12 @@ export const metadata = {
 }
 
 export default async function DestinationsPage() {
-  // Optional community WiFi layer, joined to the static catalogue by slug.
-  const wifiSummaryBySlug = await getWifiBySlug()
+  // Optional community WiFi layer + live weather for every card, both fetched
+  // server-side. Weather for all destinations is ONE batched Open-Meteo request.
+  const [wifiSummaryBySlug, weatherBySlug] = await Promise.all([
+    getWifiBySlug(),
+    getWeatherBatch(DESTINATIONS.map((d) => ({ slug: d.slug, lat: d.lat, lng: d.lng }))),
+  ])
   const wifiBySlug: Record<string, { avg: number | null; count: number }> = {}
   for (const [slug, w] of Object.entries(wifiSummaryBySlug)) {
     wifiBySlug[slug] = { avg: w.avg_download_mbps, count: w.reading_count }
@@ -37,7 +42,7 @@ export default async function DestinationsPage() {
       </section>
 
       <div className="mx-auto max-w-6xl px-5 py-10">
-        <DestinationsBrowser wifiBySlug={wifiBySlug} />
+        <DestinationsBrowser wifiBySlug={wifiBySlug} weatherBySlug={weatherBySlug} />
       </div>
     </div>
   )
