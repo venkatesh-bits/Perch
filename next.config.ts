@@ -38,10 +38,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  images: {
-    // Destination photos come from Wikimedia Commons (see scripts/fetch-destination-images.ts).
-    remotePatterns: [{ protocol: 'https', hostname: 'upload.wikimedia.org' }],
-  },
+  // Destination photos are downloaded + self-hosted under public/dest-images/
+  // (see scripts/fetch-destination-images.ts), so no remote image patterns are
+  // needed - next/image optimises straight from our own origin.
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },

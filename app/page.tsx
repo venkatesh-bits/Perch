@@ -1,9 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { SearchBar } from '@/components/search/search-bar'
 import { EV_STATIONS, DISTRICT_DIRECTORY } from '@/lib/data/ev-stations'
 import { DESTINATIONS, getDestination } from '@/lib/data/destinations'
+import { destinationImage } from '@/lib/data/destination-images'
 import { getWifiBySlug } from '@/lib/queries/home'
+import { getWeatherBatch } from '@/lib/queries/weather'
+import { WeatherChip } from '@/components/destinations/weather-chip'
 
 export const revalidate = 3600
 
@@ -26,11 +30,15 @@ function elevationTone(e: number): string {
 }
 
 export default async function HomePage() {
-  // Catalogue is the source of truth; DB adds optional WiFi data, joined by slug.
-  const wifiBySlug = await getWifiBySlug()
-
   const destCount = DESTINATIONS.length
   const featuredList = FEATURED_SLUGS.map((s) => getDestination(s)!).filter(Boolean)
+
+  // Catalogue is the source of truth; the DB adds optional WiFi data (by slug) and
+  // Open-Meteo adds live weather for the featured cards in one batched request.
+  const [wifiBySlug, weatherBySlug] = await Promise.all([
+    getWifiBySlug(),
+    getWeatherBatch(featuredList.map((d) => ({ slug: d.slug, lat: d.lat, lng: d.lng }))),
+  ])
 
   return (
     <div>
@@ -100,23 +108,39 @@ export default async function HomePage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {featuredList.map((d, i) => {
               const wifi = wifiBySlug[d.slug]
+              const img = destinationImage(d.slug)
               return (
                 <Link
                   key={d.slug}
                   href={`/destinations/${d.slug}`}
                   className={`card card-hover rise group overflow-hidden delay-${Math.min(i + 1, 4)}`}
                 >
-                  <div className={`relative h-32 bg-gradient-to-br ${elevationTone(d.elevationM)} p-5`}>
-                    <div className="flex h-full flex-col justify-between">
+                  <div className={`relative h-40 overflow-hidden bg-gradient-to-br ${elevationTone(d.elevationM)}`}>
+                    {img ? (
+                      <Image
+                        src={img.thumbUrl}
+                        alt={d.name}
+                        fill
+                        priority={i < 3}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : null}
+                    {/* Scrim keeps the white text legible over any photo. */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/25" />
+                    <div className="relative flex h-full flex-col justify-between p-5">
                       <div className="flex items-start justify-between">
-                        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/55">
+                        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/70">
                           {d.state}
                         </span>
-                        <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-                          {d.elevationM.toLocaleString()}m
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <WeatherChip weather={weatherBySlug[d.slug]} />
+                          <span className="rounded-full bg-black/30 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+                            {d.elevationM.toLocaleString()}m
+                          </span>
+                        </div>
                       </div>
-                      <h3 className="font-display text-2xl text-white">{d.name}</h3>
+                      <h3 className="font-display text-2xl text-white drop-shadow-sm">{d.name}</h3>
                     </div>
                   </div>
 

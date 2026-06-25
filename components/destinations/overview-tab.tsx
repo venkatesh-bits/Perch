@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { chargersNearDestination, isOpenData, type AnyStation } from '@/lib/data/ev-stations-all'
 import type { HillStation } from '@/lib/data/destinations'
+import { wildlifeFor } from '@/lib/data/wildlife'
 import { Fact } from './ui'
 import { WeatherCard, WeatherSkeleton } from './weather-card'
 
@@ -22,6 +23,7 @@ function chargerMapsLink(s: AnyStation): string {
 // dataset, so it streams to the client immediately with no DB dependency.
 export function OverviewTab({ dest }: { dest: HillStation }) {
   const nearbyChargers = chargersNearDestination(dest.slug, dest.lat, dest.lng)
+  const wildlife = wildlifeFor(dest.slug)
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
@@ -36,6 +38,38 @@ export function OverviewTab({ dest }: { dest: HillStation }) {
             ))}
           </ul>
         </div>
+
+        {/* ─── Wildlife & nature (only when the place is famous for it) ─── */}
+        {wildlife ? (
+          <div className="card overflow-hidden">
+            <div className="bg-gradient-to-br from-[var(--brand)] to-[var(--brand-deep)] p-5 text-white">
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/55">
+                🐾 Wildlife &amp; nature
+              </p>
+              <h2 className="mt-1 font-display text-2xl tracking-tight">{wildlife.park}</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-white/85">{wildlife.note}</p>
+            </div>
+            <div className="p-5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+                Wildlife you may spot
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {wildlife.species.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full border border-[var(--line)] bg-[var(--paper-deep)] px-3 py-1 text-xs font-medium text-[var(--ink)]"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-[var(--ink-soft)]">
+                Sightings are never guaranteed - go with a registered guide or forest-department safari,
+                keep your distance, and never feed the animals.
+              </p>
+            </div>
+          </div>
+        ) : null}
         <div className="card p-6">
           <h2 className="font-display text-2xl tracking-tight text-[var(--ink)]">Working from here</h2>
           <p className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">{dest.remoteWorkNote}</p>

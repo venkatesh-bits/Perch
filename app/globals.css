@@ -38,11 +38,33 @@ html {
   scroll-behavior: smooth;
 }
 body {
-  background: var(--paper);
+  /* Layered, fixed background washes give the warm paper some depth instead of a
+     flat fill: a soft mint glow up top, a faint gold hint in the corner and a
+     cool base tint. Kept very low-opacity so text and cards stay crisp. */
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(60rem 32rem at 50% -8%,  rgb(127 184 156 / 0.18), transparent 70%),
+    radial-gradient(48rem 28rem at 100% 2%,  rgb(224 169 59 / 0.10), transparent 65%),
+    radial-gradient(52rem 40rem at 0% 18%,   rgb(28 82 64 / 0.06),  transparent 70%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--ink);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Faint topographic contour pattern fixed behind everything - reinforces the
+   maps / trip-planner feel without competing with content. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='760' height='760' viewBox='0 0 760 760'%3E%3Cg fill='none' stroke='%231C5240' stroke-opacity='0.05' stroke-width='1.1'%3E%3Cpath d='M-40 200C140 120 300 280 480 200S760 120 860 220'/%3E%3Cpath d='M-40 300C160 220 320 360 500 290S780 220 880 320'/%3E%3Cpath d='M-40 410C150 340 340 470 520 400S800 330 900 430'/%3E%3Cpath d='M-40 530C170 450 330 590 520 520S790 450 900 540'/%3E%3Cpath d='M-40 650C150 580 340 700 520 640S800 560 900 660'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 760px 760px;
 }
 
 .font-display {

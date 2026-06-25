@@ -56,6 +56,13 @@ export interface Weather {
   daily: DailyForecast[]
 }
 
+/** Compact live snapshot for list/card previews. */
+export interface CurrentWeather {
+  tempC: number
+  code: number
+  isDay: boolean
+}
+
 /**
  * Current conditions + 3-day forecast for a coordinate. Returns null on any
  * failure so callers render a graceful fallback instead of crashing. Cached for
@@ -102,5 +109,50 @@ export async function getWeather(lat: number, lng: number): Promise<Weather | nu
   } catch (e) {
     console.error('[getWeather]', e)
     return null
+  }
+}
+
+/**
+ * Current conditions for many coordinates in ONE request. Open-Meteo accepts
+ * comma-separated lat/lng lists and returns an array (or a single object for one
+ * point), so a whole destinations grid costs a single fetch. Returns a map keyed
+ * by the caller's slug; missing/failed points are simply absent (graceful).
+ */
+export async function getWeatherBatch(
+  points: { slug: string; lat: number; lng: number }[],
+): Promise<Record<string, CurrentWeather>> {
+  if (points.length === 0) return {}
+  try {
+    const url = new URL('https://api.open-meteo.com/v1/forecast')
+    url.searchParams.set('latitude', points.map((p) => p.lat).join(','))
+    url.searchParams.set('longitude', points.map((p) => p.lng).join(','))
+    url.searchParams.set('current', 'temperature_2m,weather_code,is_day')
+    url.searchParams.set('timezone', 'auto')
+
+    const res = await fetch(url, { next: { revalidate: 1800 } })
+    if (!res.ok) {
+      console.error('[weatherBatch] HTTP', res.status)
+      return {}
+    }
+    const data = await res.json()
+    // One point -> object; many points -> array. Normalise to an array.
+    type Row = { current?: { temperature_2m?: number; weather_code?: number; is_day?: number } }
+    const rows: Row[] = Array.isArray(data) ? data : [data]
+
+    const out: Record<string, CurrentWeather> = {}
+    rows.forEach((row, i) => {
+      const c = row?.current
+      const p = points[i]
+      if (!c || !p || c.temperature_2m == null) return
+      out[p.slug] = {
+        tempC: Math.round(c.temperature_2m),
+        code: c.weather_code ?? 0,
+        isDay: c.is_day === 1,
+      }
+    })
+    return out
+  } catch (e) {
+    console.error('[getWeatherBatch]', e)
+    return {}
   }
 }

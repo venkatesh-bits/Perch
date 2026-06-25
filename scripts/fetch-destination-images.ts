@@ -1,36 +1,82 @@
 /**
- * Build-time destination image fetcher.
+ * Build-time destination image fetcher + self-hoster (NATURE-biased).
  *
- * Pulls a lead photo for each destination from Wikipedia / Wikimedia Commons via
- * the keyless MediaWiki API (no key, $0), captures CC attribution + license, and
- * writes lib/data/destination-images.ts. Same build-time-data pattern as the EV
- * and stays scripts. Images are CC-licensed; we store + display attribution.
+ * For each destination it searches Wikimedia Commons (keyless MediaWiki API, $0)
+ * for candidate photos, SCORES them toward nature/wildlife and AWAY from towns,
+ * buildings, streets and maps, picks the best, then DOWNLOADS it (re-encoded with
+ * sharp to a lean ~1920px JPEG) into public/dest-images/<slug>.jpg. Serving from
+ * our own origin means next/image never calls Wikimedia at runtime (no 429 bursts
+ * when a grid loads, faster paints) while staying $0.
+ *
+ * Search seeds come from each destination's own `highlights` (e.g. "Pillar Rocks",
+ * "Catherine Falls", "Eravikulam National Park") plus nature/wildlife terms, so
+ * the picks are scenic landscapes/forests/animals rather than cityscapes.
  *
  * Run:  npx tsx scripts/fetch-destination-images.ts
- * Then commit the regenerated lib/data/destination-images.ts.
+ * Then commit lib/data/destination-images.ts AND public/dest-images/.
  */
 
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { DESTINATIONS } from '../lib/data/destinations'
+import sharp from 'sharp'
+import { DESTINATIONS, type HillStation } from '../lib/data/destinations'
 
 const UA = 'PerchTripPlanner/1.0 (https://github.com/perch; hobby project) contact: hello@perch.app'
-const THUMB = 800
+const SRC_WIDTH = 2560   // thumbnail width fetched from Commons
+const STORE_WIDTH = 1920 // final stored width after sharp re-encode
+const JPEG_QUALITY = 78
+const PUBLIC_DIR = resolve(import.meta.dirname, '../public/dest-images')
 
-// Explicit title overrides for destinations whose plain name resolves to an
-// admin/district page (map image) instead of a scenic one.
-const OVERRIDE: Record<string, string> = {
-  coorg: 'Madikeri',
-  wayanad: 'Wayanad district',
-  nilgiris: 'Nilgiri Mountains',
-  gudalur: 'Gudalur, Nilgiris',
-  farahabad: 'Amrabad Tiger Reserve',
-  puducherry: 'Promenade Beach',
-  'silent-valley': 'Silent Valley National Park',
+// Optional first-priority search query for places whose obvious shot is a town -
+// steer them straight to a scenic/nature subject.
+const NATURE_OVERRIDE: Record<string, string> = {
+  ooty: 'Doddabetta Nilgiri hills',
+  coonoor: 'Coonoor tea estate valley',
+  kotagiri: 'Catherine Falls Kotagiri',
+  kodaikanal: 'Pillar Rocks Kodaikanal',
+  munnar: 'Munnar tea estate hills',
+  coorg: 'Coorg coffee plantation hills',
+  chikmagalur: 'Mullayanagiri hills',
+  mullayanagiri: 'Mullayanagiri peak',
+  nilgiris: 'Nilgiri mountains',
+  puducherry: 'Paradise Beach Pondicherry',
+  'araku-valley': 'Araku Valley coffee hills',
+  // Scenic places that missed on the first pass - seed nature-rich queries.
+  pachamalai: 'Pachamalai hills forest',
+  vythiri: 'Vythiri Wayanad waterfall forest',
+  peermade: 'Peermade tea estate hills',
+  lakkidi: 'Lakkidi Wayanad ghat viewpoint',
+  ramakkalmedu: 'Ramakkalmedu hills viewpoint',
+  gavi: 'Gavi Kerala forest lake',
+  sakleshpur: 'Sakleshpur Western Ghats hills',
+  kemmanagundi: 'Kemmanagundi hills waterfall',
+  'br-hills': 'Biligiriranga Hills forest',
+  skandagiri: 'Skandagiri hills sunrise',
+  charmadi: 'Charmadi Ghat western ghats',
+  mandalpatti: 'Mandalpatti hills Coorg',
+  lambasingi: 'Lambasingi hills Andhra',
+  nallamala: 'Nallamala forest hills',
+  farahabad: 'Nallamala forest Amrabad',
 }
+
+// Reject non-photos, artworks and structures outright (checked on the filename).
+// Includes old engravings/lithographs (often "... - British Library") and idols.
+const BAD = /(\bmap\b|locator|\bflag\b|coat[_ ]?of[_ ]?arms|\bseal\b|emblem|\blogo\b|diagram|\bchart\b|signboard|name[_ ]?board|milestone|poster|\bbook\b|\bstamp\b|\bportrait\b|engraving|sketch|\bdrawing\b|lithograph|\bprint\b|painting|illustration|\blibrary\b|amman|\bidol\b|deity|goddess|\.svg|\.tiff?|\.gif)/i
+
+// Urban / built-environment terms - strong negative (we want nature, not buildings).
+const URBAN_G = /(town|city|cityscape|street|\bmarket\b|bus[_ ]?stand|bus[_ ]?stop|\bshops?\b|hotel|resort|hospital|\bschool\b|college|university|airport|railway|\bstadium\b|\bhouses?\b|residential|junction|\bbuildings?\b|\btemple\b|\bamman\b|\bidol\b|church|mosque|\bfort\b|palace|museum|\bstatue\b|monument|\bmall\b|\boffice\b)/gi
+
+// Subjects that are almost always urban - hard-reject on the FILENAME (the
+// strongest signal of what a photo actually shows), even if the description is
+// padded with scenery words (e.g. "Street views from Coorg").
+const STRONG_URBAN = /(\btown\b|\bcity\b|\bstreet\b|\bmarket\b|bus[_ ]?stand|\bjunction\b|downtown|bazaar)/i
+
+// Nature / wildlife / scenery terms - positive.
+const NATURE_G = /(hills?|valley|forest|jungle|\btea\b|coffee|plantation|estate|viewpoint|\bview\b|\bpoint\b|\brocks?\b|ghats?|peak|summit|waterfalls?|\bfalls\b|cascade|\blake\b|river|stream|\bdam\b|backwater|sunrise|sunset|meadow|grass(?:land)?|shola|wildlife|sanctuary|national[_ ]?park|tiger|elephant|\bdeer\b|leopard|macaque|tahr|bison|gaur|\bbirds?\b|hornbill|landscape|scenic|scenery|mist|\bfog\b|clouds?|mountains?|\bgreen|nature|trek|trail|beach|coast|\bsea\b|\bdunes?\b|gardens?|panorama|flower|bloom)/gi
 
 interface ImageResult {
   url: string
+  thumbUrl: string
   width: number
   height: number
   attribution: string
@@ -38,111 +84,214 @@ interface ImageResult {
   sourceUrl: string
 }
 
+interface Candidate {
+  file: string       // bare filename, underscores -> spaces (for scoring/logging)
+  thumbUrl: string
+  width: number
+  mime: string
+  attribution: string
+  license: string
+  sourceUrl: string
+  score: number
+}
+
 function stripHtml(s: string): string {
   return s.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&#0?39;|&apos;/g, "'").replace(/\s+/g, ' ').trim()
 }
 
-// Reject maps, flags, locators, seals and SVG icons - we want a real photo.
-function isBadImage(filename: string): boolean {
-  return /map|locator|flag|coat[_ ]?of[_ ]?arms|seal|emblem|logo|\.svg$/i.test(filename)
+function uniqueMatches(re: RegExp, text: string): number {
+  const m = text.match(re)
+  if (!m) return 0
+  return new Set(m.map((s) => s.toLowerCase())).size
 }
 
-async function api(params: Record<string, string>): Promise<any> {
-  const url = new URL('https://en.wikipedia.org/w/api.php')
+// The filename is the strongest signal of what a photo actually shows; the
+// description is capped so a townscape can't win on nature-padded prose alone
+// (e.g. an ID-named photo of a settlement whose caption lists "tea, hills…").
+function scoreCand(file: string, desc: string): number {
+  const d = desc.slice(0, 400)
+  const natF = uniqueMatches(NATURE_G, file)
+  const urbF = uniqueMatches(URBAN_G, file)
+  const natD = uniqueMatches(NATURE_G, d)
+  const urbD = uniqueMatches(URBAN_G, d)
+  return 3 * natF - 5 * urbF + Math.min(natD, 2) - 2 * urbD
+}
+
+async function commons(params: Record<string, string>): Promise<any> {
+  const url = new URL('https://commons.wikimedia.org/w/api.php')
   url.searchParams.set('format', 'json')
   url.searchParams.set('action', 'query')
   url.searchParams.set('redirects', '1')
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetch(url, { headers: { 'User-Agent': UA } })
-  if (!res.ok) throw new Error(`MediaWiki HTTP ${res.status}`)
+  if (!res.ok) throw new Error(`Commons HTTP ${res.status}`)
   return res.json()
 }
 
-async function pageImage(title: string): Promise<{ url: string; width: number; height: number; file: string } | null> {
-  const data = await api({ prop: 'pageimages', piprop: 'thumbnail|original|name', pithumbsize: String(THUMB), titles: title })
+/** Search Commons (File namespace) and return scored, photo-only candidates. */
+async function searchImages(query: string): Promise<Candidate[]> {
+  const data = await commons({
+    generator: 'search',
+    gsrsearch: query,
+    gsrnamespace: '6',
+    gsrlimit: '20',
+    prop: 'imageinfo',
+    iiprop: 'url|extmetadata|mime|size',
+    iiurlwidth: String(SRC_WIDTH),
+  })
   const pages = data?.query?.pages ?? {}
+  const out: Candidate[] = []
   for (const id of Object.keys(pages)) {
     const p = pages[id]
-    if (id === '-1' || p.missing !== undefined) continue
-    const file: string = p.pageimage ?? ''
-    if (!file || isBadImage(file)) continue
-    const thumb = p.thumbnail
-    const orig = p.original
-    if (!thumb?.source) continue
-    return { url: thumb.source, width: thumb.width, height: thumb.height, file }
-  }
-  return null
-}
-
-async function attribution(file: string): Promise<{ attribution: string; license: string; sourceUrl: string }> {
-  try {
-    const data = await api({ prop: 'imageinfo', iiprop: 'extmetadata|url', titles: `File:${file}` })
-    const pages = data?.query?.pages ?? {}
-    const p = Object.values(pages)[0] as any
     const ii = p?.imageinfo?.[0]
-    const meta = ii?.extmetadata ?? {}
+    if (!ii?.thumburl) continue
+    const mime: string = ii.mime ?? ''
+    if (mime !== 'image/jpeg' && mime !== 'image/png') continue
+    if ((ii.width ?? 0) < 1200) continue
+    const fileRaw: string = (p.title ?? '').replace(/^File:/, '')
+    if (BAD.test(fileRaw)) continue
+    const file = fileRaw.replace(/\.[a-z0-9]+$/i, '').replace(/_/g, ' ')
+    if (STRONG_URBAN.test(file)) continue
+    const meta = ii.extmetadata ?? {}
+    const desc = meta.ImageDescription?.value ? stripHtml(meta.ImageDescription.value) : ''
     const artist = meta.Artist?.value ? stripHtml(meta.Artist.value) : 'Wikimedia Commons'
     const license = meta.LicenseShortName?.value ? stripHtml(meta.LicenseShortName.value) : 'CC / public domain'
-    const sourceUrl = ii?.descriptionurl ?? `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file)}`
-    return { attribution: artist.slice(0, 80), license, sourceUrl }
-  } catch {
-    return { attribution: 'Wikimedia Commons', license: 'CC / public domain', sourceUrl: `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file)}` }
+    out.push({
+      file,
+      thumbUrl: ii.thumburl,
+      width: ii.width ?? 0,
+      mime,
+      attribution: artist.slice(0, 80),
+      license,
+      sourceUrl: ii.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURIComponent(p.title)}`,
+      score: scoreCand(file, desc),
+    })
   }
+  return out
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-async function resolveDestination(slug: string, name: string, district: string, state: string): Promise<ImageResult | null> {
-  const base = name.replace(/\s*\(.*?\)\s*/g, '').trim()
-  const paren = name.match(/\(([^)]+)\)/)?.[1]?.trim()
-  const candidates = [
-    OVERRIDE[slug],
+/** Build nature-biased search queries from the destination's own data. */
+function buildQueries(d: HillStation): string[] {
+  const base = d.name.replace(/\s*\(.*?\)\s*/g, '').trim()
+  const hi = d.highlights.map((h) => h.replace(/\s*\(.*?\)\s*/g, '').trim())
+  const catTerm =
+    d.category === 'forest' ? `${base} wildlife forest`
+    : d.category === 'coastal' ? `${base} beach`
+    : `${base} hills landscape`
+  return [
+    NATURE_OVERRIDE[d.slug],
+    ...hi.map((h) => `${h} ${base}`),
+    catTerm,
+    `${base} ${d.region} scenery`,
+    `${base} ${d.state}`,
     base,
-    paren,
-    `${base}, ${state}`,
-    district,
   ].filter(Boolean) as string[]
+}
 
-  for (const title of candidates) {
+async function resolveImage(d: HillStation): Promise<Candidate | null> {
+  const pool = new Map<string, Candidate>() // dedupe by file
+  for (const q of buildQueries(d)) {
+    let cands: Candidate[] = []
     try {
-      const img = await pageImage(title)
-      if (img) {
-        const attr = await attribution(img.file)
-        return { url: img.url, width: img.width, height: img.height, ...attr }
-      }
+      cands = await searchImages(q)
     } catch (e) {
-      console.warn(`  ${slug}: "${title}" failed - ${(e as Error).message}`)
+      console.warn(`  ${d.slug}: search "${q}" failed - ${(e as Error).message}`)
+    }
+    for (const c of cands) {
+      const prev = pool.get(c.file)
+      if (!prev || c.score > prev.score) pool.set(c.file, c)
     }
     await sleep(120)
+    // Stop early once we have a couple of clearly-good (nature-rich) options.
+    if ([...pool.values()].filter((c) => c.score >= 4).length >= 2) break
   }
-  return null
+  const ranked = [...pool.values()].sort((a, b) => b.score - a.score || b.width - a.width)
+  // Significant tokens of the place name/slug, used to confirm a candidate is
+  // actually about THIS place (guards against the bare-name query matching an
+  // unrelated foreign location, e.g. "Farahabad" -> a castle in Iran).
+  const tokens = [...d.name.toLowerCase().split(/[\s()]+/), ...d.slug.split('-')]
+    .filter((t) => t.length >= 4)
+  const onTopic = (c: Candidate) => tokens.some((t) => c.file.toLowerCase().includes(t))
+  // Accept the best candidate with a real nature signal (score >= 1), OR a
+  // neutral shot (score 0, no urban words) that is clearly about this place.
+  // Net-urban (negative) and off-topic neutrals fall back to the gradient.
+  return ranked.find((c) => c.score >= 1 || (c.score >= 0 && onTopic(c))) ?? null
+}
+
+/** Download + re-encode to public/dest-images/<slug>.jpg; returns bytes + dims.
+ *  Retries once - large Wikimedia thumbs occasionally arrive truncated. */
+async function download(url: string, slug: string): Promise<{ bytes: number; width: number; height: number }> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA } })
+      if (!res.ok) throw new Error(`download HTTP ${res.status}`)
+      const src = Buffer.from(await res.arrayBuffer())
+      const { data, info } = await sharp(src)
+        .rotate()
+        .resize({ width: STORE_WIDTH, withoutEnlargement: true })
+        .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
+        .toBuffer({ resolveWithObject: true })
+      writeFileSync(resolve(PUBLIC_DIR, `${slug}.jpg`), data)
+      return { bytes: data.length, width: info.width, height: info.height }
+    } catch (e) {
+      lastErr = e
+      await sleep(400)
+    }
+  }
+  throw lastErr
 }
 
 async function main() {
-  console.log(`Fetching Wikipedia images for ${DESTINATIONS.length} destinations…`)
+  console.log(`Finding nature/wildlife photos for ${DESTINATIONS.length} destinations…`)
+  rmSync(PUBLIC_DIR, { recursive: true, force: true })
+  mkdirSync(PUBLIC_DIR, { recursive: true })
+
   const out: Record<string, ImageResult> = {}
   const misses: string[] = []
+  let totalBytes = 0
 
   for (const d of DESTINATIONS) {
-    const r = await resolveDestination(d.slug, d.name, d.district, d.state)
-    if (r) {
-      out[d.slug] = r
-      console.log(`  ✓ ${d.slug.padEnd(20)} ${r.url.split('/').pop()?.slice(0, 40)}`)
-    } else {
+    const best = await resolveImage(d)
+    if (!best) {
       misses.push(d.slug)
-      console.log(`  ✗ ${d.slug.padEnd(20)} (no suitable image)`)
+      console.log(`  ✗ ${d.slug.padEnd(20)} (no suitable nature image)`)
+      continue
+    }
+    try {
+      const { bytes, width, height } = await download(best.thumbUrl, d.slug)
+      totalBytes += bytes
+      const localPath = `/dest-images/${d.slug}.jpg`
+      out[d.slug] = {
+        url: localPath,
+        thumbUrl: localPath,
+        width,
+        height,
+        attribution: best.attribution,
+        license: best.license,
+        sourceUrl: best.sourceUrl,
+      }
+      console.log(`  ✓ ${d.slug.padEnd(20)} s${String(best.score).padEnd(3)} ${best.file.slice(0, 38).padEnd(38)} ${(bytes / 1024).toFixed(0)}KB`)
+    } catch (e) {
+      misses.push(d.slug)
+      console.log(`  ✗ ${d.slug.padEnd(20)} download failed - ${(e as Error).message}`)
     }
     await sleep(120)
   }
 
   const header = `// AUTO-GENERATED by scripts/fetch-destination-images.ts - do not edit by hand.
-// Source: Wikipedia / Wikimedia Commons (keyless MediaWiki API). Generated: ${new Date().toISOString().slice(0, 10)}
-// ${Object.keys(out).length}/${DESTINATIONS.length} destinations have an image. Images are CC-licensed;
-// 'attribution' + 'license' + 'sourceUrl' are stored so the UI can credit authors.
+// Source: Wikimedia Commons (keyless MediaWiki API). Generated: ${new Date().toISOString().slice(0, 10)}
+// Images are NATURE-biased (scored toward landscapes/forests/wildlife, away from
+// towns/buildings) then downloaded + self-hosted under public/dest-images/ so
+// next/image never hits Wikimedia at runtime. ${Object.keys(out).length}/${DESTINATIONS.length} resolved.
+// CC-licensed; 'attribution' + 'license' + 'sourceUrl' credit authors.
 // Re-run: npx tsx scripts/fetch-destination-images.ts
 
 export interface DestinationImage {
-  url: string
+  url: string        // local path - full-screen hero
+  thumbUrl: string   // local path - card grids (next/image sizes per device)
   width: number
   height: number
   attribution: string
@@ -161,6 +310,7 @@ export function destinationImage(slug: string): DestinationImage | undefined {
   writeFileSync(outPath, header)
   console.log(`\nWrote ${outPath}`)
   console.log(`Hits: ${Object.keys(out).length} | Misses: ${misses.length}${misses.length ? ' -> ' + misses.join(', ') : ''}`)
+  console.log(`Total: ${(totalBytes / 1024 / 1024).toFixed(1)} MB into public/dest-images/`)
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })
