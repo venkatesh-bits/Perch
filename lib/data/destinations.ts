@@ -644,7 +644,7 @@ export const DESTINATIONS: HillStation[] = [
     region: 'Changthang', category: 'high_point', elevationM: 5883, lat: 32.6300, lng: 78.4200,
     summary: 'The highest motorable road in the world (~5,883 m), a BRO-built pass on the remote Changthang plateau.',
     bestSeason: 'Jul to Sep',
-    highlights: ['~5,883 m — world’s highest road', 'BRO milestone', 'Remote Changthang'],
+    highlights: ['~5,883 m - world’s highest road', 'BRO milestone', 'Remote Changthang'],
     remoteWorkNote: 'Permits required and near the LAC; severe AMS risk. Only for the fully acclimatized.',
   },
 
@@ -774,7 +774,7 @@ export const DESTINATIONS: HillStation[] = [
   {
     slug: 'chopta', name: 'Chopta', state: 'Uttarakhand', district: 'Rudraprayag',
     region: 'Garhwal Himalaya', category: 'high_point', elevationM: 2680, lat: 30.4900, lng: 79.0800,
-    summary: 'A meadow hamlet called the "Mini Switzerland of Uttarakhand", base for Tungnath — the highest Shiva temple — and Chandrashila.',
+    summary: 'A meadow hamlet called the "Mini Switzerland of Uttarakhand", base for Tungnath - the highest Shiva temple - and Chandrashila.',
     bestSeason: 'Apr to Jun, Sep to Nov; snow Dec to Feb',
     highlights: ['Tungnath temple (3,680 m)', 'Chandrashila summit', 'Deoria Tal'],
     remoteWorkNote: 'Tented/homestay hamlet with little signal; come to trek, not to work.',
@@ -822,7 +822,7 @@ export const DESTINATIONS: HillStation[] = [
   {
     slug: 'rishikesh', name: 'Rishikesh', state: 'Uttarakhand', district: 'Dehradun',
     region: 'Garhwal foothills', category: 'gateway', elevationM: 372, lat: 30.0869, lng: 78.2676,
-    summary: 'The "yoga capital of the world" on the Ganga, where the river leaves the hills — rafting, ashrams and the iconic suspension bridges.',
+    summary: 'The "yoga capital of the world" on the Ganga, where the river leaves the hills - rafting, ashrams and the iconic suspension bridges.',
     bestSeason: 'Sep to Nov, Feb to May (rafting)',
     highlights: ['White-water rafting', 'Laxman & Ram Jhula', 'Yoga & Ganga Aarti'],
     remoteWorkNote: 'Lowland gateway, not a hill station, but a strong cafe/coworking and wellness base with good fibre.',

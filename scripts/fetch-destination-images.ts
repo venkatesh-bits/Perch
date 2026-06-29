@@ -168,7 +168,31 @@ function scoreCand(file: string, desc: string): number {
   return 3 * natF - 5 * urbF + Math.min(natD, 2) - 2 * urbD
 }
 
-async function commons(params: Record<string, string>): Promise<any> {
+interface CommonsMetaField {
+  value?: string
+}
+
+interface CommonsImageInfo {
+  thumburl?: string
+  url?: string
+  descriptionurl?: string
+  width?: number
+  mime?: string
+  extmetadata?: Record<string, CommonsMetaField | undefined>
+}
+
+interface CommonsPage {
+  title?: string
+  imageinfo?: CommonsImageInfo[]
+}
+
+interface CommonsResponse {
+  query?: {
+    pages?: Record<string, CommonsPage | undefined>
+  }
+}
+
+async function commons(params: Record<string, string>): Promise<CommonsResponse> {
   const url = new URL('https://commons.wikimedia.org/w/api.php')
   url.searchParams.set('format', 'json')
   url.searchParams.set('action', 'query')
@@ -176,7 +200,7 @@ async function commons(params: Record<string, string>): Promise<any> {
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetch(url, { headers: { 'User-Agent': UA } })
   if (!res.ok) throw new Error(`Commons HTTP ${res.status}`)
-  return res.json()
+  return res.json() as Promise<CommonsResponse>
 }
 
 /** Search Commons (File namespace) and return scored, photo-only candidates. */
@@ -194,12 +218,14 @@ async function searchImages(query: string): Promise<Candidate[]> {
   const out: Candidate[] = []
   for (const id of Object.keys(pages)) {
     const p = pages[id]
-    const ii = p?.imageinfo?.[0]
+    if (!p) continue
+    const ii = p.imageinfo?.[0]
     if (!ii?.thumburl) continue
     const mime: string = ii.mime ?? ''
     if (mime !== 'image/jpeg' && mime !== 'image/png') continue
     if ((ii.width ?? 0) < 1200) continue
-    const fileRaw: string = (p.title ?? '').replace(/^File:/, '')
+    const title = p.title ?? ''
+    const fileRaw: string = title.replace(/^File:/, '')
     if (BAD.test(fileRaw)) continue
     const file = fileRaw.replace(/\.[a-z0-9]+$/i, '').replace(/_/g, ' ')
     if (STRONG_URBAN.test(file)) continue
@@ -214,7 +240,7 @@ async function searchImages(query: string): Promise<Candidate[]> {
       mime,
       attribution: artist.slice(0, 80),
       license,
-      sourceUrl: ii.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURIComponent(p.title)}`,
+      sourceUrl: ii.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURIComponent(title)}`,
       score: scoreCand(file, desc),
     })
   }

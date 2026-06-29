@@ -74,9 +74,6 @@ export const EV_NETWORKS: EvNetwork[] = [
   },
 ]
 
-/** Government e-AMRIT national charging map (NITI Aayog). */
-export const E_AMRIT_URL = 'https://e-amrit.niti.gov.in/charging-map'
-
 /** A live Google Maps search for chargers near a named place. */
 export function evSearchNear(place: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`EV charging near ${place}`)}`

@@ -80,7 +80,20 @@ function nearestDestination(lat: number, lng: number) {
   return { slug, distKm: bestD }
 }
 
-async function fetchOverpass(): Promise<any> {
+interface OverpassElement {
+  type: string
+  id: number
+  lat?: number
+  lon?: number
+  center?: { lat: number; lon: number }
+  tags?: Record<string, string>
+}
+
+interface OverpassResponse {
+  elements: OverpassElement[]
+}
+
+async function fetchOverpass(): Promise<OverpassResponse> {
   const query = `[out:json][timeout:150];
 (
   node["tourism"~"^(hotel|guest_house|hostel|apartment|chalet|motel)$"]["name"](${BBOX.s},${BBOX.w},${BBOX.n},${BBOX.e});
@@ -100,7 +113,7 @@ out center tags;`
         body: 'data=' + encodeURIComponent(query),
       })
       if (!res.ok) { console.warn(`  Overpass ${ep} → HTTP ${res.status}, trying next…`); continue }
-      return await res.json()
+      return await res.json() as OverpassResponse
     } catch (e) {
       console.warn(`  Overpass ${ep} failed: ${(e as Error).message}, trying next…`)
     }
@@ -114,7 +127,7 @@ async function main() {
   console.log(`  → ${data.elements.length} raw named accommodation elements`)
 
   const stays: OsmStay[] = []
-  for (const el of data.elements as any[]) {
+  for (const el of data.elements) {
     const lat = el.lat ?? el.center?.lat
     const lng = el.lon ?? el.center?.lon
     if (typeof lat !== 'number' || typeof lng !== 'number') continue
