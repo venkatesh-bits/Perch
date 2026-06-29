@@ -6,7 +6,7 @@ import { DISTRICT_DIRECTORY, districtGoogleMapsUrl } from '@/lib/data/ev-station
 export const metadata: Metadata = {
   title: 'EV charging maps',
   description:
-    'Every EV charging map worth bookmarking for an India road trip - the all-network maps (PlugShare, Google Maps, the government e-AMRIT map) and each operator’s own locator (Tata Power, Ather, Statiq, ChargeZone, Zeon, ChargeMOD, Ola, Kazam, BPCL).',
+    'Every EV charging map worth bookmarking for an India road trip - the all-network maps (PlugShare, Google Maps, the government e-AMRIT map) and each operator’s own locator (Tata, Ather, Statiq, ChargeZone, Zeon, ChargeMOD and Ola).',
 }
 
 function NetworkCard({ n }: { n: EvNetwork }) {
