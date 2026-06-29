@@ -9,7 +9,7 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3
 export const SITE_NAME = 'Perch'
 
 export const SITE_DESCRIPTION =
-  'Work from anywhere. Worry about nothing. Community-verified WiFi, work cafes, ghat road conditions, stays and EV charging for remote workers and road trippers across South India.'
+  'Work from anywhere. Worry about nothing. Real WiFi speeds, work cafes, weather, wildlife, stays and road advisories for hill stations across India, checked by people who went, from the Western Ghats to the Himalaya.'
 
 /** Absolute URL helper for canonical links and OG tags. */
 export function absoluteUrl(path = ''): string {

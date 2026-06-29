@@ -1,33 +1,65 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { chargersNearDestination, isOpenData, type AnyStation } from '@/lib/data/ev-stations-all'
+import Image from 'next/image'
 import type { HillStation } from '@/lib/data/destinations'
 import { wildlifeFor } from '@/lib/data/wildlife'
+import { wildlifeImage } from '@/lib/data/wildlife-images'
+import { advisoryFor } from '@/lib/data/advisories'
+import { evSearchNear } from '@/lib/data/ev-networks'
 import { Fact } from './ui'
 import { WeatherCard, WeatherSkeleton } from './weather-card'
 
 const CATEGORY_TAG: Record<string, string> = {
-  hill_station: 'Hill station', forest: 'Forest & wildlife', gateway: 'Gateway', coastal: 'Coastal',
+  hill_station: 'Hill station', high_point: 'High pass / peak', forest: 'Forest & wildlife', gateway: 'Gateway', coastal: 'Coastal',
 }
 
-function chargerPower(s: AnyStation): string {
-  const kind = s.speed === 'fast' ? 'DC fast' : 'AC'
-  return s.powerKw > 0 ? `${s.powerKw} kW ${kind}` : kind
-}
-
-function chargerMapsLink(s: AnyStation): string {
-  return `https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}`
-}
-
-// Overview tab. Fully static: rendered from the catalogue and the keyless EV
-// dataset, so it streams to the client immediately with no DB dependency.
+// Overview tab. Fully static: rendered from the catalogue, so it streams to the
+// client immediately with no DB dependency.
 export function OverviewTab({ dest }: { dest: HillStation }) {
-  const nearbyChargers = chargersNearDestination(dest.slug, dest.lat, dest.lng)
   const wildlife = wildlifeFor(dest.slug)
+  const wildlifePic = wildlifeImage(dest.slug)
+  const advisory = advisoryFor(dest.slug)
+  const isHigh = advisory?.level === 'high'
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
       <div className="space-y-6">
+        {/* ─── Travel advisory (only where care is genuinely needed) ─── */}
+        {advisory ? (
+          <div
+            className={`rounded-2xl border p-5 ${
+              isHigh
+                ? 'border-[var(--clay)]/40 bg-[var(--clay)]/8'
+                : 'border-[var(--brand-gold)]/45 bg-[var(--brand-gold)]/10'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg" aria-hidden>⚠️</span>
+              <h2 className="font-display text-xl tracking-tight text-[var(--ink)]">
+                Good to know before you go
+              </h2>
+              <span
+                className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  isHigh ? 'bg-[var(--clay)] text-white' : 'bg-[var(--brand-gold)] text-[var(--ink)]'
+                }`}
+              >
+                {isHigh ? 'Take care' : 'Good to know'}
+              </span>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {advisory.points.map((p) => (
+                <li key={p} className="flex items-start gap-2 text-sm leading-relaxed text-[var(--ink)]">
+                  <span className="mt-0.5 shrink-0 text-[var(--clay)]">•</span> {p}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 border-t border-[var(--line)] pt-2 text-[11px] leading-relaxed text-[var(--ink-soft)]">
+              Conditions change with weather, season and local rules. Always check the latest official
+              and local advisories before you travel.
+            </p>
+          </div>
+        ) : null}
+
         <div className="card p-6">
           <h2 className="font-display text-2xl tracking-tight text-[var(--ink)]">Highlights</h2>
           <ul className="mt-3 space-y-2">
@@ -49,6 +81,29 @@ export function OverviewTab({ dest }: { dest: HillStation }) {
               <h2 className="mt-1 font-display text-2xl tracking-tight">{wildlife.park}</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-white/85">{wildlife.note}</p>
             </div>
+            {/* Real CC-licensed photo of the headline species, self-hosted under
+                public/wildlife/. Credit line mirrors the destination hero. */}
+            {wildlifePic ? (
+              <figure className="relative aspect-[16/10] w-full overflow-hidden bg-[var(--brand-deep)]">
+                <Image
+                  src={wildlifePic.url}
+                  alt={`${wildlife.species[0]} - ${wildlife.park}`}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 40vw"
+                  className="object-cover"
+                />
+                <figcaption>
+                  <a
+                    href={wildlifePic.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-1.5 right-2 rounded bg-black/45 px-1.5 py-0.5 text-[10px] text-white/80 backdrop-blur-sm transition-colors hover:text-white"
+                  >
+                    📷 {wildlifePic.attribution} / {wildlifePic.license} · Wikimedia
+                  </a>
+                </figcaption>
+              </figure>
+            ) : null}
             <div className="p-5">
               <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--ink-soft)]">
                 Wildlife you may spot
@@ -79,59 +134,26 @@ export function OverviewTab({ dest }: { dest: HillStation }) {
           </p>
         </div>
 
-        {/* ─── Charging nearby ─── */}
+        {/* ─── Charging ─── */}
         <div className="card p-6">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-2xl tracking-tight text-[var(--ink)]">🔌 Charging nearby</h2>
-            <Link href="/charging" className="shrink-0 text-xs font-medium text-[var(--brand)] underline">
-              Full EV map →
+          <h2 className="font-display text-2xl tracking-tight text-[var(--ink)]">🔌 Charging</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">
+            On the hill routes a working DC charger can be an hour apart, so check live availability and
+            start the climb with enough range. These open the current maps, not a list that goes stale.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href={evSearchNear(`${dest.name}, ${dest.state}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary text-sm"
+            >
+              Chargers near {dest.name} ↗
+            </a>
+            <Link href="/charging" className="btn-ghost text-sm">
+              All charging maps →
             </Link>
           </div>
-          {nearbyChargers.length === 0 ? (
-            <p className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">
-              No chargers mapped within 40 km yet. Open the{' '}
-              <Link href="/charging" className="font-medium text-[var(--brand)] underline">full EV map</Link>{' '}
-              for live links, and plan to arrive with enough range.
-            </p>
-          ) : (
-            <>
-              <p className="mt-1 text-xs text-[var(--ink-soft)]">
-                {nearbyChargers.length} charging {nearbyChargers.length === 1 ? 'point' : 'points'} within ~40 km of {dest.name}.
-              </p>
-              <ul className="mt-3 space-y-1.5">
-                {nearbyChargers.slice(0, 6).map((s) => (
-                  <li key={s.id}>
-                    <a
-                      href={chargerMapsLink(s)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-2 rounded-lg border border-[var(--line)] px-3 py-2 transition-colors hover:border-[var(--brand-mint)]"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-[var(--ink)]">{s.name}</span>
-                        <span className="block truncate text-[11px] text-[var(--ink-soft)]">
-                          {s.network} · {chargerPower(s)}
-                          {isOpenData(s) && s.distanceToDestKm !== null ? ` · ~${s.distanceToDestKm} km` : ''}
-                        </span>
-                      </span>
-                      <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                        isOpenData(s)
-                          ? 'bg-[var(--paper-deep)] text-[var(--ink-soft)]'
-                          : 'bg-[var(--brand)]/10 text-[var(--brand)]'
-                      }`}>
-                        {isOpenData(s) ? 'Community' : 'Verified'}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              {nearbyChargers.length > 6 && (
-                <Link href="/charging" className="mt-3 inline-block text-xs font-medium text-[var(--brand)] underline">
-                  +{nearbyChargers.length - 6} more on the EV map
-                </Link>
-              )}
-            </>
-          )}
         </div>
       </div>
       <div className="space-y-3">

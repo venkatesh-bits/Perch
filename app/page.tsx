@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SearchBar } from '@/components/search/search-bar'
-import { EV_STATIONS, DISTRICT_DIRECTORY } from '@/lib/data/ev-stations'
+import { EV_NETWORKS, EV_LIVE_MAPS } from '@/lib/data/ev-networks'
 import { DESTINATIONS, getDestination } from '@/lib/data/destinations'
 import { destinationImage } from '@/lib/data/destination-images'
 import { getWifiBySlug } from '@/lib/queries/home'
@@ -15,11 +15,12 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
 }
 
-const FEATURED_SLUGS = ['ooty', 'kodaikanal', 'munnar', 'coorg', 'chikmagalur', 'wayanad']
+const FEATURED_SLUGS = ['ooty', 'munnar', 'coorg', 'gulmarg', 'manali', 'leh', 'pangong-tso', 'kodaikanal', 'wayanad']
 
 const MARQUEE = [
-  'Coonoor', 'Munnar', 'Coorg', 'Kodaikanal', 'Chikmagalur', 'Wayanad',
-  'Ooty', 'Yercaud', 'Valparai', 'Araku Valley', 'Vagamon', 'Sakleshpur',
+  'Coonoor', 'Munnar', 'Coorg', 'Kodaikanal', 'Gulmarg', 'Manali',
+  'Ooty', 'Leh', 'Spiti', 'Pahalgam', 'Auli', 'Mussoorie',
+  'Valparai', 'Wayanad', 'Sonamarg', 'Chikmagalur', 'Nainital', 'Vagamon',
 ]
 
 function elevationTone(e: number): string {
@@ -43,7 +44,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* ─── HERO ───────────────────────────────────────────────────────────── */}
-      <section className="grain relative overflow-hidden bg-[var(--brand-deep)]">
+      <section className="on-dark grain relative overflow-hidden bg-[var(--brand-deep)]">
         {/* glowing orbs */}
         <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-[var(--brand-mint)] opacity-20 blur-[120px]" />
         <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-[var(--brand-gold)] opacity-15 blur-[120px]" />
@@ -59,7 +60,7 @@ export default async function HomePage() {
         <div className="relative z-10 mx-auto max-w-6xl px-5 py-24 sm:py-32">
           <div className="rise inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-[var(--brand-mint)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-mint)]" />
-            Community-verified · {destCount ?? '28'}+ destinations · Updated by real travellers
+            {destCount ?? '28'} hill stations, checked by people who actually went
           </div>
 
           <h1 className="rise delay-1 mt-6 max-w-3xl font-display text-5xl leading-[1.02] tracking-tight text-white sm:text-7xl">
@@ -68,8 +69,9 @@ export default async function HomePage() {
           </h1>
 
           <p className="rise delay-2 mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-            WiFi speeds, ghat-road warnings, fuel and EV charging stops, and work-friendly cafes
-            for South India&apos;s best hill stations - researched once, so you don&apos;t have to.
+            Will the WiFi hold for a call? Is the ghat road washed out? Where do you charge an EV
+            past Manali? We track the things that decide whether a hill town works for a few weeks,
+            from the Western Ghats up to Ladakh.
           </p>
 
           <div className="rise delay-3 mt-9 max-w-3xl">
@@ -97,7 +99,7 @@ export default async function HomePage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">Where to perch</p>
               <h2 className="mt-1.5 font-display text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
-                Popular remote-work destinations
+                Towns people keep going back to
               </h2>
             </div>
             <Link href="/destinations" className="hidden text-sm font-medium text-[var(--brand)] hover:text-[var(--brand-deep)] sm:block">
@@ -167,28 +169,28 @@ export default async function HomePage() {
         </section>
 
         {/* ─── EV CHARGING TEASER ───────────────────────────────────────────── */}
-        <section className="grain relative overflow-hidden rounded-3xl bg-[var(--ink)] p-8 sm:p-12">
+        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--ink)] p-8 shadow-[var(--elev-lg)] sm:p-12">
           <div className="pointer-events-none absolute -right-10 -top-10 h-64 w-64 rounded-full bg-[var(--brand-gold)] opacity-10 blur-[100px]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
             <div className="space-y-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand-gold)]">New</p>
               <h2 className="font-display text-3xl tracking-tight text-white sm:text-4xl">
-                Driving electric? <span className="italic text-[var(--brand-mint)]">We mapped the chargers.</span>
+                Driving electric? <span className="italic text-[var(--brand-mint)]">We point you to the live maps.</span>
               </h2>
               <p className="max-w-md text-white/65">
-                Charging stops across {DISTRICT_DIRECTORY.length} South Indian districts - Chennai,
-                Puducherry, Coimbatore, the Nilgiris, Coorg, Munnar and more. Curated pins plus a
-                live link to the full list in every district.
+                A hand-drawn charger map goes stale in a week, so we don’t keep one. We send you to the
+                maps the operators keep current themselves - PlugShare and the government e-AMRIT map for
+                everything at once, plus each network from Tata Power and Ather to ChargeMOD.
               </p>
               <Link href="/charging" className="btn-primary mt-2 bg-[var(--brand-gold)] text-[var(--ink)] hover:bg-[#cf9a2f]">
-                Open the charging map →
+                See the charging maps →
               </Link>
             </div>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { n: EV_STATIONS.filter((s) => s.speed === 'fast').length, l: 'Fast chargers' },
-                { n: DISTRICT_DIRECTORY.length, l: 'Districts' },
-                { n: `${EV_STATIONS.length}+`, l: 'Curated stops' },
+                { n: EV_NETWORKS.length, l: 'Networks' },
+                { n: EV_LIVE_MAPS.length, l: 'All-in-one maps' },
+                { n: 'Live', l: 'Always current' },
               ].map((s) => (
                 <div key={s.l} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
                   <p className="font-display text-3xl text-white">{s.n}</p>
@@ -202,20 +204,20 @@ export default async function HomePage() {
         {/* ─── HOW IT WORKS ─────────────────────────────────────────────────── */}
         <section className="space-y-8">
           <div className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">The idea</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">How it works</p>
             <h2 className="mt-1.5 font-display text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
-              One trip report. Two guides, kept fresh.
+              One trip report does double duty.
             </h2>
           </div>
-          <div className="grid gap-px overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
+          <div className="grid gap-px overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--line)] shadow-[var(--elev-md)] sm:grid-cols-3">
             {[
-              { icon: '✶', title: 'One form, two datasets', body: 'A single trip report fills the destination guide (WiFi, cafes, power) and the journey guide (route, ghat warnings, fuel & EV stops) at the same time.' },
-              { icon: '◷', title: 'Dated, tagged data', body: 'Every WiFi reading carries a date and carrier tag, so you know exactly how fresh it is - not a stale screenshot from years ago.' },
-              { icon: '⤳', title: 'Any way you travel', body: 'Car, bike, bus, train or EV. Each destination collects separate journey reports per mode, with mode-specific warnings and tips.' },
+              { icon: '✶', title: 'Fill it once', body: 'A single report feeds two places at once: the destination page (WiFi, cafes, where to charge) and the route page (the drive, the ghat sections, where to fuel up).' },
+              { icon: '◷', title: 'You see the date', body: 'Every WiFi reading shows when it was taken and on which carrier. A 40 Mbps note from last month means something. A screenshot from 2019 does not.' },
+              { icon: '⤳', title: 'However you got there', body: 'Drove, rode, took the bus, came by train. Reports are split by mode, so a biker reads biker notes and a driver reads driver notes.' },
             ].map((item) => (
-              <div key={item.title} className="space-y-3 bg-[var(--surface)] p-7">
-                <span className="font-display text-3xl text-[var(--brand)]">{item.icon}</span>
-                <p className="font-semibold text-[var(--ink)]">{item.title}</p>
+              <div key={item.title} className="group/cell space-y-3 bg-[var(--surface)] p-7 transition-colors duration-300 hover:bg-[var(--paper)]">
+                <span className="inline-block font-display text-3xl text-[var(--brand)] transition-transform duration-300 ease-[cubic-bezier(0.34,1.4,0.5,1)] group-hover/cell:-translate-y-0.5">{item.icon}</span>
+                <p className="font-semibold tracking-[-0.01em] text-[var(--ink)]">{item.title}</p>
                 <p className="text-sm leading-relaxed text-[var(--ink-soft)]">{item.body}</p>
               </div>
             ))}
@@ -223,7 +225,7 @@ export default async function HomePage() {
         </section>
 
         {/* ─── CTA ──────────────────────────────────────────────────────────── */}
-        <section className="grain relative overflow-hidden rounded-3xl bg-[var(--brand)] px-8 py-12 sm:px-12">
+        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--brand)] px-8 py-12 shadow-[var(--elev-lg)] sm:px-12">
           <svg viewBox="0 0 200 200" className="pointer-events-none absolute right-0 top-0 h-full opacity-[0.08]" aria-hidden="true">
             <path d="M0,200 L50,90 L90,140 L140,40 L180,100 L200,30 L200,200 Z" fill="white" />
           </svg>
@@ -231,8 +233,8 @@ export default async function HomePage() {
             <div className="text-white">
               <h2 className="font-display text-3xl tracking-tight sm:text-4xl">Just back from the hills?</h2>
               <p className="mt-2 max-w-md text-white/75">
-                Your WiFi speed test and road notes would help hundreds planning the same trip.
-                It takes about three minutes.
+                Run a speed test, jot down how the road was. Three minutes from you saves the next
+                person a ruined work week.
               </p>
             </div>
             <Link href="/contribute" className="btn-ghost shrink-0 text-base">
