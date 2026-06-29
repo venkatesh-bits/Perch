@@ -36,52 +36,41 @@ export const EV_LIVE_MAPS: EvNetwork[] = [
 // Individual networks and their own station locators / apps.
 export const EV_NETWORKS: EvNetwork[] = [
   {
-    name: 'Tata Power EZ Charge',
-    url: 'https://www.tatapower.com/ev-charging/ev-charging-stations.aspx',
-    blurb: 'One of India’s largest networks - CCS2 DC fast and AC points, mapped in the Tata Power EZ Charge app.',
+    name: 'Tata EV Route Planner',
+    url: 'https://evrouteplanner.tatamotors.com/route-planner',
+    blurb: 'Plan a route and it lays out charging stops along the way - handy for the long ghat drives.',
   },
   {
     name: 'Ather Grid',
-    url: 'https://www.atherenergy.com/ather-grid',
+    url: 'https://www.atherenergy.com/locate-ather-dealer',
     blurb: 'Dense fast-charging grid that started with scooters and now adds car chargers.',
     twoWheeler: true,
   },
   {
     name: 'Statiq',
-    url: 'https://www.statiq.in/',
+    url: 'https://www.statiq.in/ev-charging-station',
     blurb: 'Wide pan-India network of AC and DC chargers; live map in the Statiq app.',
   },
   {
     name: 'ChargeZone',
-    url: 'https://www.chargezone.com/',
+    url: 'https://www.chargezone.co.in/charge-locator',
     blurb: 'High-power DC fast-charging built around highway corridors.',
   },
   {
     name: 'Zeon Charging',
-    url: 'https://zeoncharging.com/',
+    url: 'https://zeoncharging.com/charging_locations',
     blurb: 'Hotel, club and highway chargers - common across the southern hill stations.',
   },
   {
     name: 'ChargeMOD',
-    url: 'https://chargemod.com/',
+    url: 'https://chargemod.com/charging-stations',
     blurb: 'Strong Kerala coverage, including the Munnar, Wayanad and Thekkady routes.',
   },
   {
     name: 'Ola Electric Hypercharger',
-    url: 'https://www.olaelectric.com/hypercharger',
+    url: 'https://www.olaelectric.com/hypercharger-network#hypercharger-map',
     blurb: 'Hypercharger network for Ola scooters, with points opening to other vehicles.',
     twoWheeler: true,
-  },
-  {
-    name: 'Kazam',
-    url: 'https://www.kazam.in/',
-    blurb: 'One of the largest AC and two-wheeler networks; locator in the Kazam app.',
-    twoWheeler: true,
-  },
-  {
-    name: 'BPCL (Bharat Petroleum)',
-    url: 'https://www.bharatpetroleum.in/',
-    blurb: 'DC fast chargers at Bharat Petroleum fuel stations along the highways.',
   },
 ]
 
