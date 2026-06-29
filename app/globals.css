@@ -14,6 +14,30 @@
   --brand-mint:   #7FB89C;  /* soft mint accent          */
   --brand-gold:   #E0A93B;  /* warm gold pop             */
   --clay:         #C2603E;  /* warm clay (warnings/pop)  */
+
+  /* Hairline + layered elevation. Warm-tinted shadows (a touch of the pine/ink
+     hue, never neutral grey) so cards lift off the paper without looking digital.
+     Three stacked layers per level give a soft, real-light falloff.
+     Named --elev-* / --motion-* to avoid colliding with Tailwind v4's own
+     --shadow-* / --ease-* theme tokens. */
+  --hairline:  #EDE7DC;                 /* lighter than --line, for inner seams */
+  --elev-rgb: 30 24 18;                 /* warm near-black, space-separated RGB  */
+  --elev-xs: 0 1px 2px rgb(var(--elev-rgb) / 0.05);
+  --elev-sm:
+    0 1px 2px   rgb(var(--elev-rgb) / 0.04),
+    0 2px 6px  -1px rgb(var(--elev-rgb) / 0.06);
+  --elev-md:
+    0 1px 2px   rgb(var(--elev-rgb) / 0.05),
+    0 6px 16px -4px rgb(var(--elev-rgb) / 0.10),
+    0 12px 28px -8px rgb(var(--elev-rgb) / 0.08);
+  --elev-lg:
+    0 2px 4px   rgb(var(--elev-rgb) / 0.05),
+    0 12px 28px -8px rgb(var(--elev-rgb) / 0.12),
+    0 28px 56px -16px rgb(var(--elev-rgb) / 0.16);
+
+  /* One easing curve everywhere, with a gentle spring for hover/press. */
+  --motion-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
 /* Expose tokens to Tailwind v4 utilities (bg-brand, text-ink, etc.) */
@@ -50,8 +74,22 @@ body {
   background-repeat: no-repeat;
   color: var(--ink);
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "kern", "liga", "calt";
+  letter-spacing: -0.011em;       /* slight optical tightening for the body */
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Editorial heading rhythm: tighter leading, optical negative tracking that
+   eases off as the display serif grows, and balanced wrapping so titles break
+   into pleasing shapes instead of leaving one orphan word on the last line. */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
 }
 
 /* Faint topographic contour pattern fixed behind everything - reinforces the
@@ -69,11 +107,27 @@ body::before {
 
 .font-display {
   font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.018em;   /* the display serif reads tighter and more deliberate */
+  line-height: 1.08;
 }
 
 ::selection {
   background: var(--brand);
   color: var(--paper);
+}
+
+/* ─── Accessible focus ─────────────────────────────────────────────────────── */
+/* Keyboard users get a clear, on-brand ring; mouse clicks stay clean. The offset
+   lifts the ring off the element so it reads as a halo, not a hard outline. */
+*:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.4rem;
+}
+/* On the dark hero/CTA panels a pine ring would vanish - use a light one there. */
+.on-dark *:focus-visible,
+.on-dark:focus-visible {
+  outline-color: var(--brand-mint);
 }
 
 /* ─── Grain overlay (subtle, award-style texture) ──────────────────────────── */
@@ -149,39 +203,56 @@ body::before {
 .btn-primary {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   border-radius: 0.85rem;
   background: var(--brand);
   color: var(--paper);
-  padding: 0.7rem 1.25rem;
+  padding: 0.7rem 1.3rem;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: background 0.2s, transform 0.2s;
+  letter-spacing: -0.005em;
+  box-shadow: var(--elev-sm);
+  transition: background 0.2s var(--motion-out), transform 0.22s var(--motion-spring), box-shadow 0.22s var(--motion-out);
 }
-.btn-primary:hover { background: var(--brand-deep); transform: translateY(-1px); }
+.btn-primary:hover { background: var(--brand-deep); transform: translateY(-2px); box-shadow: var(--elev-md); }
+.btn-primary:active { transform: translateY(0); box-shadow: var(--elev-xs); transition-duration: 0.08s; }
 
 .btn-ghost {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   border-radius: 0.85rem;
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--line);
-  padding: 0.7rem 1.25rem;
+  padding: 0.7rem 1.3rem;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: border-color 0.2s, transform 0.2s;
+  letter-spacing: -0.005em;
+  box-shadow: var(--elev-xs);
+  transition: border-color 0.2s var(--motion-out), transform 0.22s var(--motion-spring), box-shadow 0.22s var(--motion-out);
 }
-.btn-ghost:hover { border-color: var(--brand-mint); transform: translateY(-1px); }
+.btn-ghost:hover { border-color: var(--brand-mint); transform: translateY(-2px); box-shadow: var(--elev-sm); }
+.btn-ghost:active { transform: translateY(0); box-shadow: none; transition-duration: 0.08s; }
 
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1.25rem;
-  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s;
+  box-shadow: var(--elev-sm);
+  transition: transform 0.3s var(--motion-out), box-shadow 0.3s var(--motion-out), border-color 0.3s var(--motion-out);
 }
 .card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 44px -16px rgb(26 23 20 / 0.22);
+  transform: translateY(-4px);
+  border-color: var(--hairline);
+  box-shadow: var(--elev-lg);
+}
+
+/* Inner-image cards: the photo header should sit flush inside the rounded card,
+   so its top corners follow the card radius cleanly. */
+.card > :first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary, .btn-ghost, .card { transition: none; }
+  .btn-primary:hover, .btn-ghost:hover, .card-hover:hover { transform: none; }
 }

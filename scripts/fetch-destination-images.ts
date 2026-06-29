@@ -16,10 +16,19 @@
  * Then commit lib/data/destination-images.ts AND public/dest-images/.
  */
 
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import sharp from 'sharp'
 import { DESTINATIONS, type HillStation } from '../lib/data/destinations'
+import { DESTINATION_IMAGES } from '../lib/data/destination-images'
+
+// Incremental by default: keep already-resolved images and only fetch new/missing
+// destinations. Pass --all to re-fetch everything from scratch.
+const REFETCH_ALL = process.argv.includes('--all')
+
+// Places where Commons only has townscape / vehicle / signboard shots that fail
+// the nature-only bar - leave them on the clean elevation gradient instead.
+const NO_IMAGE = new Set(['umling-la', 'kufri', 'ranikhet'])
 
 const UA = 'PerchTripPlanner/1.0 (https://github.com/perch; hobby project) contact: hello@perch.app'
 const SRC_WIDTH = 2560   // thumbnail width fetched from Commons
@@ -57,14 +66,56 @@ const NATURE_OVERRIDE: Record<string, string> = {
   lambasingi: 'Lambasingi hills Andhra',
   nallamala: 'Nallamala forest hills',
   farahabad: 'Nallamala forest Amrabad',
+  // Himalaya - steer famous-but-urban-named places to their scenic subject.
+  srinagar: 'Dal Lake Srinagar mountains',
+  gulmarg: 'Gulmarg meadow Kashmir snow',
+  pahalgam: 'Pahalgam Lidder valley',
+  sonamarg: 'Sonamarg Thajiwas glacier',
+  doodhpathri: 'Doodhpathri meadows',
+  yusmarg: 'Yusmarg meadow Kashmir',
+  'gurez-valley': 'Gurez valley Habba Khatoon',
+  patnitop: 'Patnitop meadow forest',
+  bhaderwah: 'Bhaderwah valley meadows',
+  'sinthan-top': 'Sinthan Top snow pass',
+  leh: 'Leh Ladakh landscape mountains',
+  'nubra-valley': 'Nubra Valley sand dunes Ladakh',
+  'pangong-tso': 'Pangong Tso lake Ladakh',
+  'khardung-la': 'Khardung La pass Ladakh',
+  'tso-moriri': 'Tso Moriri lake Ladakh',
+  hemis: 'Hemis National Park Ladakh mountains',
+  lamayuru: 'Lamayuru moonland Ladakh',
+  zanskar: 'Zanskar valley river Ladakh',
+  'umling-la': 'Umling La snow mountains Ladakh',
+  shimla: 'Shimla hills Himalaya snow',
+  kufri: 'Mahasu Peak Kufri snow forest',
+  manali: 'Solang Valley Manali snow mountains',
+  'rohtang-pass': 'Rohtang Pass snow Manali',
+  dharamshala: 'Dhauladhar Dharamshala mountains',
+  dalhousie: 'Dalhousie hills forest',
+  khajjiar: 'Khajjiar meadow lake',
+  kasol: 'Parvati Valley Kasol river',
+  kalpa: 'Kinner Kailash Kalpa',
+  chitkul: 'Chitkul Baspa valley',
+  'spiti-valley': 'Spiti Valley landscape Key monastery',
+  'tirthan-valley': 'Tirthan Valley river forest',
+  mussoorie: 'Mussoorie hills Himalaya',
+  nainital: 'Naini Lake Nainital',
+  auli: 'Gorson Bugyal Auli meadow snow',
+  chopta: 'Chopta meadow Tungnath',
+  munsiyari: 'Munsiyari Panchachuli peaks',
+  'valley-of-flowers': 'Valley of Flowers Uttarakhand',
+  kausani: 'Kausani Himalaya Nanda Devi',
+  ranikhet: 'Ranikhet golf course pine forest meadow',
+  binsar: 'Binsar forest Himalaya',
+  rishikesh: 'Ganga river Rishikesh hills',
 }
 
 // Reject non-photos, artworks and structures outright (checked on the filename).
 // Includes old engravings/lithographs (often "... - British Library") and idols.
-const BAD = /(\bmap\b|locator|\bflag\b|coat[_ ]?of[_ ]?arms|\bseal\b|emblem|\blogo\b|diagram|\bchart\b|signboard|name[_ ]?board|milestone|poster|\bbook\b|\bstamp\b|\bportrait\b|engraving|sketch|\bdrawing\b|lithograph|\bprint\b|painting|illustration|\blibrary\b|amman|\bidol\b|deity|goddess|\.svg|\.tiff?|\.gif)/i
+const BAD = /(\bmap\b|locator|\bflag\b|coat[_ ]?of[_ ]?arms|\bseal\b|emblem|\blogo\b|diagram|\bchart\b|signboard|name[_ ]?board|milestone|poster|\bbook\b|\bstamp\b|\bportrait\b|engraving|sketch|\bdrawing\b|lithograph|\bprint\b|painting|illustration|\blibrary\b|amman|\bidol\b|deity|goddess|\bzoo\b|\bcage|caged|enclosure|\.svg|\.tiff?|\.gif)/i
 
 // Urban / built-environment terms - strong negative (we want nature, not buildings).
-const URBAN_G = /(town|city|cityscape|street|\bmarket\b|bus[_ ]?stand|bus[_ ]?stop|\bshops?\b|hotel|resort|hospital|\bschool\b|college|university|airport|railway|\bstadium\b|\bhouses?\b|residential|junction|\bbuildings?\b|\btemple\b|\bamman\b|\bidol\b|church|mosque|\bfort\b|palace|museum|\bstatue\b|monument|\bmall\b|\boffice\b)/gi
+const URBAN_G = /(town|city|cityscape|street|\bmarket\b|bus[_ ]?stand|bus[_ ]?stop|\bshops?\b|hotel|resort|hospital|\bschool\b|college|university|airport|railway|\bstadium\b|\bhouses?\b|residential|junction|\bbuildings?\b|\btemple\b|\bamman\b|\bidol\b|church|mosque|\bfort\b|palace|museum|\bstatue\b|monument|\bmall\b|\boffice\b|rickshaw|\bcar\b|vehicle|\bbus\b|\btruck\b|motorcycle|motorbike|\bbike\b|scooter|\bsign\b|signboard)/gi
 
 // Subjects that are almost always urban - hard-reject on the FILENAME (the
 // strongest signal of what a photo actually shows), even if the description is
@@ -245,15 +296,22 @@ async function download(url: string, slug: string): Promise<{ bytes: number; wid
 }
 
 async function main() {
-  console.log(`Finding nature/wildlife photos for ${DESTINATIONS.length} destinations…`)
-  rmSync(PUBLIC_DIR, { recursive: true, force: true })
   mkdirSync(PUBLIC_DIR, { recursive: true })
 
+  // Carry forward already-resolved images (file still on disk) unless --all.
   const out: Record<string, ImageResult> = {}
+  if (!REFETCH_ALL) {
+    for (const [slug, img] of Object.entries(DESTINATION_IMAGES)) {
+      if (existsSync(resolve(PUBLIC_DIR, `${slug}.jpg`))) out[slug] = img
+    }
+  }
+  const todo = DESTINATIONS.filter((d) => !out[d.slug] && !NO_IMAGE.has(d.slug))
+  console.log(`Finding nature/wildlife photos: ${todo.length} to fetch, ${Object.keys(out).length} kept (${DESTINATIONS.length} total).`)
+
   const misses: string[] = []
   let totalBytes = 0
 
-  for (const d of DESTINATIONS) {
+  for (const d of todo) {
     const best = await resolveImage(d)
     if (!best) {
       misses.push(d.slug)

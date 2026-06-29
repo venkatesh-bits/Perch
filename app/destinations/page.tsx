@@ -6,9 +6,9 @@ import { getWeatherBatch } from '@/lib/queries/weather'
 export const revalidate = 3600
 
 export const metadata = {
-  title: 'Destinations - every South Indian hill station',
+  title: 'Destinations - hill stations & high country across India',
   description:
-    'Browse remote-work and road-trip destinations across all of South India: hill stations, forests and gateways in Tamil Nadu, Kerala, Karnataka, Andhra Pradesh, Telangana and Puducherry.',
+    'Browse remote-work and road-trip destinations across India: the South Indian hills (Tamil Nadu, Kerala, Karnataka, Andhra Pradesh, Telangana, Puducherry) and the Himalaya (Jammu & Kashmir, Ladakh, Himachal Pradesh, Uttarakhand) - with live weather, wildlife and travel advisories.',
 }
 
 export default async function DestinationsPage() {
@@ -25,18 +25,19 @@ export default async function DestinationsPage() {
 
   return (
     <div>
-      <section className="grain relative overflow-hidden bg-[var(--brand-deep)]">
+      <section className="on-dark grain relative overflow-hidden bg-[var(--brand-deep)]">
         <div className="pointer-events-none absolute -left-20 top-0 h-64 w-64 rounded-full bg-[var(--brand-mint)] opacity-20 blur-[110px]" />
         <div className="relative z-10 mx-auto max-w-6xl px-5 py-14">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand-mint)]">
-            {DESTINATIONS.length} places across 6 states
+            {DESTINATIONS.length} places · South India to the Himalaya
           </p>
           <h1 className="rise mt-2 max-w-2xl font-display text-4xl tracking-tight text-white sm:text-5xl">
-            Every hill station in South India, in one place.
+            Every hill town we have notes on.
           </h1>
           <p className="rise delay-1 mt-3 max-w-xl text-white/70">
-            From the famous Nilgiris to offbeat Eastern Ghats ranges. Filter by state or type, and
-            open any one for climate, season, connectivity and community WiFi data.
+            The Nilgiris and the Eastern Ghats, the valleys of Kashmir, the high passes of Ladakh, the
+            peaks of Himachal and Uttarakhand. Filter by state or type, then open any town for its
+            weather, climate, wildlife and anything worth knowing before you go.
           </p>
         </div>
       </section>

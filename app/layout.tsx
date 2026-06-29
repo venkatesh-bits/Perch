@@ -26,8 +26,9 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
-    'remote work South India', 'hill stations', 'workation', 'digital nomad India',
-    'WiFi hill stations', 'EV charging South India', 'Ooty', 'Munnar', 'Coorg', 'road trip',
+    'remote work India', 'hill stations', 'workation', 'digital nomad India',
+    'WiFi hill stations', 'Himalaya travel', 'Kashmir', 'Ladakh', 'Manali', 'Leh',
+    'Ooty', 'Munnar', 'Coorg', 'road trip', 'travel advisory', 'highest motorable pass',
   ],
   alternates: { canonical: '/' },
   openGraph: {
@@ -57,10 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geist.variable} ${instrument.variable}`}>
       <body className="min-h-screen antialiased">
-          <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-md">
+          <header className="sticky top-0 z-50 border-b border-[var(--line)]/80 bg-[var(--paper)]/75 shadow-[0_1px_0_rgb(30_24_18/0.03),0_8px_24px_-16px_rgb(30_24_18/0.18)] backdrop-blur-xl backdrop-saturate-150">
             <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
-              <Link href="/" className="flex items-center gap-2 group">
-                <PerchMark className="h-7 w-7 transition-transform group-hover:-translate-y-0.5" />
+              <Link href="/" className="group flex items-center gap-2 rounded-lg">
+                <PerchMark className="h-7 w-7 transition-transform duration-300 ease-[cubic-bezier(0.34,1.4,0.5,1)] group-hover:-translate-y-0.5" />
                 <span className="font-display text-2xl font-semibold tracking-tight text-[var(--brand)]">
                   perch
                 </span>
@@ -71,7 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="hidden rounded-lg px-3 py-2 text-sm font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--paper-deep)] hover:text-[var(--ink)] sm:block"
+                    className="hidden rounded-lg px-3 py-2 text-sm font-medium text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--paper-deep)] hover:text-[var(--ink)] sm:block"
                   >
                     {item.label}
                   </Link>
@@ -94,8 +95,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <span className="font-display text-2xl font-semibold text-[var(--brand)]">perch</span>
                   </Link>
                   <p className="mt-3 max-w-xs text-sm leading-relaxed text-[var(--ink-soft)]">
-                    Work from anywhere. Worry about nothing. Community-verified data for remote
-                    workers and road trippers across South India.
+                    Work from anywhere. Worry about nothing. The practical stuff remote workers and
+                    road trippers need before heading into the Indian hills, Western Ghats to the Himalaya.
                   </p>
                 </div>
                 <div className="space-y-2.5">
@@ -111,13 +112,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="space-y-2.5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">About</p>
                   <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
-                    Community-built and independent. Not affiliated with any accommodation or
-                    transport provider. Data contributed by real travellers.
+                    Built by travellers, for travellers. We do not take a cut from any stay or
+                    transport booking, so the notes here owe nothing to anyone but the people who wrote them.
                   </p>
                 </div>
               </div>
               <div className="mt-12 border-t border-[var(--line)] pt-6 text-xs text-[var(--ink-soft)]">
-                © {new Date().getFullYear()} Perch · Made for the South Indian hills
+                © {new Date().getFullYear()} Perch · Made for the Indian hills, Western Ghats to the Himalaya
               </div>
             </div>
           </footer>

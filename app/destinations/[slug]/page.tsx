@@ -37,7 +37,7 @@ const TABS = [
 ] as const
 
 const CATEGORY_TAG: Record<string, string> = {
-  hill_station: 'Hill station', forest: 'Forest & wildlife', gateway: 'Gateway', coastal: 'Coastal',
+  hill_station: 'Hill station', high_point: 'High pass / peak', forest: 'Forest & wildlife', gateway: 'Gateway', coastal: 'Coastal',
 }
 
 function elevationTone(e: number): string {
@@ -67,7 +67,7 @@ export default async function DestinationPage({
   return (
     <div>
       {/* ─── Hero ─── */}
-      <section className={`grain relative overflow-hidden bg-gradient-to-br ${elevationTone(dest.elevationM)}`}>
+      <section className={`on-dark grain relative overflow-hidden bg-gradient-to-br ${elevationTone(dest.elevationM)}`}>
         {heroImg ? (
           <Image
             src={heroImg.url}

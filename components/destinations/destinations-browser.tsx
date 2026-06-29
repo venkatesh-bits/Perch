@@ -23,6 +23,7 @@ function elevationTone(e: number): string {
 
 const CATEGORY_TAG: Record<DestinationCategory, string> = {
   hill_station: 'Hill station',
+  high_point: 'High pass / peak',
   forest: 'Forest & wildlife',
   gateway: 'Gateway',
   coastal: 'Coastal',
@@ -89,7 +90,7 @@ export function DestinationsBrowser({
         </div>
         <p className="text-sm text-[var(--ink-soft)]">
           {filtered.length} {filtered.length === 1 ? 'destination' : 'destinations'}
-          {stateFilter !== 'all' ? ` in ${stateFilter}` : ' across South India'}
+          {stateFilter !== 'all' ? ` in ${stateFilter}` : ' across India'}
         </p>
       </div>
 

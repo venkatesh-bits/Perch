@@ -101,6 +101,38 @@ export const WILDLIFE: Record<string, Wildlife> = {
     note: 'Dubare elephant camp on the Kaveri, with safaris at nearby Nagarhole National Park.',
     species: ['Asian elephant', 'Leopard', 'Spotted deer'],
   },
+
+  // ── Himalaya ─────────────────────────────────────────────────────────────
+  srinagar: {
+    park: 'Dachigam National Park',
+    note: 'Just outside Srinagar, the last refuge of the endangered Kashmir stag (hangul).',
+    species: ['Hangul (Kashmir stag)', 'Himalayan black bear', 'Leopard', 'Musk deer'],
+  },
+  hemis: {
+    park: 'Hemis National Park',
+    note: 'High-altitude park widely rated the best place on earth to track wild snow leopards (winter).',
+    species: ['Snow leopard', 'Bharal (blue sheep)', 'Tibetan wolf', 'Golden eagle'],
+  },
+  'tso-moriri': {
+    park: 'Changthang Cold Desert Sanctuary',
+    note: 'A Ramsar high-altitude wetland and breeding ground for rare birds on the Changthang plateau.',
+    species: ['Kiang (wild ass)', 'Bar-headed goose', 'Black-necked crane', 'Tibetan gazelle'],
+  },
+  'tirthan-valley': {
+    park: 'Great Himalayan National Park',
+    note: 'A UNESCO World Heritage park of pristine Western-Himalayan forest and alpine meadow.',
+    species: ['Himalayan tahr', 'Musk deer', 'Western tragopan', 'Himalayan brown bear'],
+  },
+  binsar: {
+    park: 'Binsar Wildlife Sanctuary',
+    note: 'Oak-rhododendron forest sanctuary with a 300 km Himalayan skyline from Zero Point.',
+    species: ['Leopard', 'Himalayan black bear', 'Barking deer', 'Koklass pheasant'],
+  },
+  'valley-of-flowers': {
+    park: 'Valley of Flowers National Park',
+    note: 'A UNESCO alpine valley of monsoon wildflowers, also home to shy high-Himalayan mammals.',
+    species: ['Blue sheep', 'Himalayan musk deer', 'Snow leopard (rare)', 'Himalayan monal'],
+  },
 }
 
 export function wildlifeFor(slug: string): Wildlife | undefined {
