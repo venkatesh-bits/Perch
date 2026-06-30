@@ -8,6 +8,8 @@ import { destinationImage } from '@/lib/data/destination-images'
 import { getWifiBySlug } from '@/lib/queries/home'
 import { getWeatherBatch } from '@/lib/queries/weather'
 import { WeatherChip } from '@/components/destinations/weather-chip'
+import { Tilt } from '@/components/fx/tilt'
+import { Reveal } from '@/components/fx/reveal'
 
 export const revalidate = 3600
 
@@ -15,7 +17,12 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
 }
 
-const FEATURED_SLUGS = ['ooty', 'munnar', 'coorg', 'gulmarg', 'manali', 'leh', 'pangong-tso', 'kodaikanal', 'wayanad']
+// Top 12 most-visited hill destinations across India (tourist footfall),
+// spanning the Himalaya and the South.
+const FEATURED_SLUGS = [
+  'manali', 'shimla', 'ooty', 'munnar', 'nainital', 'srinagar',
+  'gulmarg', 'leh', 'coorg', 'kodaikanal', 'mussoorie', 'dharamshala',
+]
 
 const MARQUEE = [
   'Coonoor', 'Munnar', 'Coorg', 'Kodaikanal', 'Gulmarg', 'Manali',
@@ -44,9 +51,11 @@ export default async function HomePage() {
   return (
     <div>
       {/* ─── HERO ───────────────────────────────────────────────────────────── */}
-      <section className="on-dark grain relative overflow-hidden bg-[var(--brand-deep)]">
+      <section className="on-dark grain relative overflow-hidden">
+        {/* subtle scrim so the headline stays legible over the aurora */}
+        <div className="pointer-events-none absolute inset-0 bg-[var(--space)]/35" />
         {/* glowing orbs */}
-        <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-[var(--brand-mint)] opacity-20 blur-[120px]" />
+        <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-[var(--brand-mint)] opacity-25 blur-[120px]" />
         <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-[var(--brand-gold)] opacity-15 blur-[120px]" />
 
         {/* layered mountain silhouettes */}
@@ -63,9 +72,9 @@ export default async function HomePage() {
             {destCount ?? '28'} hill stations, checked by people who actually went
           </div>
 
-          <h1 className="rise delay-1 mt-6 max-w-3xl font-display text-5xl leading-[1.02] tracking-tight text-white sm:text-7xl">
+          <h1 className="rise delay-1 mt-6 max-w-3xl font-display text-6xl leading-[1.0] tracking-tight text-white sm:text-8xl">
             Work from anywhere.<br />
-            <span className="italic text-[var(--brand-gold)]">Worry about nothing.</span>
+            <span className="italic text-grad glow-text">Worry about nothing.</span>
           </h1>
 
           <p className="rise delay-2 mt-6 max-w-xl text-lg leading-relaxed text-white/70">
@@ -112,10 +121,10 @@ export default async function HomePage() {
               const wifi = wifiBySlug[d.slug]
               const img = destinationImage(d.slug)
               return (
+                <Tilt key={d.slug} className="h-full">
                 <Link
-                  key={d.slug}
                   href={`/destinations/${d.slug}`}
-                  className={`card card-hover rise group overflow-hidden delay-${Math.min(i + 1, 4)}`}
+                  className={`card card-hover rise group flex h-full flex-col overflow-hidden delay-${Math.min(i + 1, 4)}`}
                 >
                   <div className={`relative h-40 overflow-hidden bg-gradient-to-br ${elevationTone(d.elevationM)}`}>
                     {img ? (
@@ -146,11 +155,11 @@ export default async function HomePage() {
                     </div>
                   </div>
 
-                  <div className="space-y-3 p-5">
+                  <div className="flex flex-1 flex-col space-y-3 p-5">
                     <p className="line-clamp-2 text-sm leading-relaxed text-[var(--ink-soft)]">
                       {d.summary}
                     </p>
-                    <div className="flex items-center justify-between pt-1">
+                    <div className="mt-auto flex items-center justify-between pt-1">
                       {wifi ? (
                         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)]">
                           <span className="h-2 w-2 rounded-full bg-[var(--brand-mint)]" />
@@ -163,13 +172,15 @@ export default async function HomePage() {
                     </div>
                   </div>
                 </Link>
+                </Tilt>
               )
             })}
           </div>
         </section>
 
         {/* ─── EV CHARGING TEASER ───────────────────────────────────────────── */}
-        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--ink)] p-8 shadow-[var(--elev-lg)] sm:p-12">
+        <Reveal>
+        <section className="on-dark grain glass relative overflow-hidden rounded-3xl p-8 shadow-[var(--elev-lg)] sm:p-12">
           <div className="pointer-events-none absolute -right-10 -top-10 h-64 w-64 rounded-full bg-[var(--brand-gold)] opacity-10 blur-[100px]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
             <div className="space-y-4">
@@ -182,7 +193,7 @@ export default async function HomePage() {
                 maps the operators keep current themselves - PlugShare and the government e-AMRIT map for
                 everything at once, plus each network from Tata Power and Ather to ChargeMOD.
               </p>
-              <Link href="/charging" className="btn-primary mt-2 bg-[var(--brand-gold)] text-[var(--ink)] hover:bg-[#cf9a2f]">
+              <Link href="/charging" className="mt-2 inline-flex items-center gap-1.5 rounded-[0.85rem] bg-[var(--brand-gold)] px-5 py-2.5 text-sm font-semibold text-[var(--space)] shadow-[0_0_0_1px_rgb(246_201_85/0.4),0_10px_26px_-8px_rgb(246_201_85/0.6)] transition hover:-translate-y-0.5 hover:brightness-110">
                 See the charging maps →
               </Link>
             </div>
@@ -200,8 +211,10 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+        </Reveal>
 
         {/* ─── HOW IT WORKS ─────────────────────────────────────────────────── */}
+        <Reveal>
         <section className="space-y-8">
           <div className="max-w-xl">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">How it works</p>
@@ -223,9 +236,11 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
+        </Reveal>
 
         {/* ─── CTA ──────────────────────────────────────────────────────────── */}
-        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--brand)] px-8 py-12 shadow-[var(--elev-lg)] sm:px-12">
+        <Reveal>
+        <section className="on-dark grain glass relative overflow-hidden rounded-3xl border-[var(--brand)]/30 px-8 py-12 shadow-[var(--elev-lg)] sm:px-12">
           <svg viewBox="0 0 200 200" className="pointer-events-none absolute right-0 top-0 h-full opacity-[0.08]" aria-hidden="true">
             <path d="M0,200 L50,90 L90,140 L140,40 L180,100 L200,30 L200,200 Z" fill="white" />
           </svg>
@@ -242,6 +257,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
+        </Reveal>
       </div>
     </div>
   )

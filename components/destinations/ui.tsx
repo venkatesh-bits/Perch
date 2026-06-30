@@ -71,7 +71,7 @@ export function StayCard({ stay }: { stay: Accommodation }) {
         )}
       </div>
       {stay.wifi_notes && <p className="text-xs text-[var(--ink-soft)]">{stay.wifi_notes}</p>}
-      {stay.has_backup_power && <Badge className="border-amber-100 bg-amber-50 text-amber-700">⚡ Backup power</Badge>}
+      {stay.has_backup_power && <Badge className="border-[var(--clay)]/30 bg-[var(--clay)]/12 text-[var(--clay)]">⚡ Backup power</Badge>}
     </div>
   )
 }
