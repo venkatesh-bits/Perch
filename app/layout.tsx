@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Instrument_Serif } from 'next/font/google'
 import Link from 'next/link'
 import { PerchMark } from '@/components/brand/logo'
+import { SpatialBackground } from '@/components/fx/spatial-background'
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
 import './globals.css'
 
@@ -58,7 +59,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geist.variable} ${instrument.variable}`}>
       <body className="min-h-screen antialiased">
-          <header className="sticky top-0 z-50 border-b border-[var(--line)]/80 bg-[var(--paper)]/75 shadow-[0_1px_0_rgb(30_24_18/0.03),0_8px_24px_-16px_rgb(30_24_18/0.18)] backdrop-blur-xl backdrop-saturate-150">
+          <SpatialBackground />
+          <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--paper)]/70 shadow-[0_8px_30px_-18px_rgb(0_0_0/0.8)] backdrop-blur-xl backdrop-saturate-150">
             <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
               <Link href="/" className="group flex items-center gap-2 rounded-lg">
                 <PerchMark className="h-7 w-7 transition-transform duration-300 ease-[cubic-bezier(0.34,1.4,0.5,1)] group-hover:-translate-y-0.5" />

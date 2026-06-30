@@ -44,10 +44,10 @@ export function WifiTab({ slug, wifiList, powerReports, wifiSummary }: Props) {
             </table>
           </div>
           {powerReports?.length > 0 && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-              <p className="font-semibold text-amber-900">⚡ Power reliability</p>
+            <div className="rounded-2xl border border-[var(--clay)]/30 bg-[var(--clay)]/12 p-5">
+              <p className="font-semibold text-[var(--clay)]">⚡ Power reliability</p>
               {powerReports.map((p) => (
-                <p key={p.id} className="mt-1 text-sm text-amber-800">
+                <p key={p.id} className="mt-1 text-sm text-[var(--ink-soft)]">
                   {p.locality && <span className="font-medium">{p.locality}: </span>}
                   {p.cuts_per_week_estimate !== null && `~${p.cuts_per_week_estimate} cuts/week`}
                   {p.has_inverter_backup && ' · inverter available'}

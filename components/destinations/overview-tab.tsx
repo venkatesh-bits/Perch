@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { DestinationPinMapClient } from '@/components/maps/destination-pin-map-client'
 import type { HillStation } from '@/lib/data/destinations'
 import { wildlifeFor } from '@/lib/data/wildlife'
 import { wildlifeImage } from '@/lib/data/wildlife-images'
@@ -157,6 +158,8 @@ export function OverviewTab({ dest }: { dest: HillStation }) {
         </div>
       </div>
       <div className="space-y-3">
+        {/* Location map sits at the top of the facts column. */}
+        <DestinationPinMapClient lat={dest.lat} lng={dest.lng} label={dest.name} />
         {/* Live weather streams in; the rest of the panel renders immediately. */}
         <Suspense fallback={<WeatherSkeleton />}>
           <WeatherCard lat={dest.lat} lng={dest.lng} name={dest.name} />

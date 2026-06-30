@@ -45,7 +45,7 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <Link href="/journeys" className="text-xs text-stone-400 hover:text-stone-600">
+        <Link href="/journeys" className="text-xs text-[var(--ink-soft)] hover:text-[var(--ink-soft)]">
           ← All journeys
         </Link>
         <div className="mt-2 flex items-start justify-between">
@@ -56,7 +56,7 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
                 {journey.origin_name} → {journey.destination.name}
               </h1>
             </div>
-            <p className="mt-1 text-sm text-stone-400 capitalize">
+            <p className="mt-1 text-sm text-[var(--ink-soft)] capitalize">
               By {journey.transport_mode}
               {journey.distance_km && ` · ${journey.distance_km} km`}
               {journey.typical_duration_hours && ` · ~${journey.typical_duration_hours} hrs`}
@@ -64,7 +64,7 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
           </div>
           <Link
             href={`/contribute?destination=${journey.destination_id}`}
-            className="rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
+            className="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-semibold text-[var(--space)] hover:brightness-110"
           >
             Add trip report
           </Link>
@@ -73,89 +73,89 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
 
       {/* Road-specific details */}
       {isRoadMode && (
-        <section className="rounded-xl border border-stone-200 bg-white p-5 space-y-4">
-          <h2 className="font-semibold text-stone-900">Road conditions</h2>
+        <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] backdrop-blur-md p-5 space-y-4">
+          <h2 className="font-semibold text-[var(--ink)]">Road conditions</h2>
           <div className="grid gap-4 sm:grid-cols-3 text-sm">
             {journey.road_surface_rating && (
               <div>
-                <p className="text-xs text-stone-400">Road surface</p>
-                <p className="font-medium text-stone-800">
+                <p className="text-xs text-[var(--ink-soft)]">Road surface</p>
+                <p className="font-medium text-[var(--ink)]">
                   {SURFACE_LABELS[journey.road_surface_rating]}
                 </p>
               </div>
             )}
             {journey.ghat_sections_count > 0 && (
               <div>
-                <p className="text-xs text-stone-400">Ghat sections</p>
-                <p className="font-medium text-stone-800">{journey.ghat_sections_count}</p>
+                <p className="text-xs text-[var(--ink-soft)]">Ghat sections</p>
+                <p className="font-medium text-[var(--ink)]">{journey.ghat_sections_count}</p>
               </div>
             )}
             {journey.fuel_stop_spacing_km && (
               <div>
-                <p className="text-xs text-stone-400">Fuel stop spacing</p>
-                <p className="font-medium text-stone-800">
+                <p className="text-xs text-[var(--ink-soft)]">Fuel stop spacing</p>
+                <p className="font-medium text-[var(--ink)]">
                   Every ~{journey.fuel_stop_spacing_km} km
                 </p>
               </div>
             )}
           </div>
           {journey.ghat_warnings && (
-            <div className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <div className="rounded-md bg-[var(--clay)]/12 px-4 py-3 text-sm text-[var(--clay)]">
               <span className="font-medium">Ghat warning: </span>
               {journey.ghat_warnings}
             </div>
           )}
           {journey.has_ev_charging_stops && (
-            <p className="text-sm text-emerald-700">⚡ EV charging stops available on this route</p>
+            <p className="text-sm text-[var(--brand)]">⚡ EV charging stops available on this route</p>
           )}
         </section>
       )}
 
       {/* Transit-specific details */}
       {isTransitMode && (
-        <section className="rounded-xl border border-stone-200 bg-white p-5 space-y-3">
-          <h2 className="font-semibold text-stone-900">Transit details</h2>
+        <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] backdrop-blur-md p-5 space-y-3">
+          <h2 className="font-semibold text-[var(--ink)]">Transit details</h2>
           <div className="grid gap-4 sm:grid-cols-2 text-sm">
             {journey.operator_name && (
               <div>
-                <p className="text-xs text-stone-400">Operator</p>
-                <p className="font-medium text-stone-800">{journey.operator_name}</p>
+                <p className="text-xs text-[var(--ink-soft)]">Operator</p>
+                <p className="font-medium text-[var(--ink)]">{journey.operator_name}</p>
               </div>
             )}
             {journey.schedule_reliability && (
               <div>
-                <p className="text-xs text-stone-400">Schedule reliability</p>
-                <p className="font-medium text-stone-800">
+                <p className="text-xs text-[var(--ink-soft)]">Schedule reliability</p>
+                <p className="font-medium text-[var(--ink)]">
                   {journey.schedule_reliability ? RELIABILITY_LABELS[journey.schedule_reliability] : '-'}
                 </p>
               </div>
             )}
           </div>
           {journey.booking_notes && (
-            <p className="text-sm text-stone-600">{journey.booking_notes}</p>
+            <p className="text-sm text-[var(--ink-soft)]">{journey.booking_notes}</p>
           )}
         </section>
       )}
 
       {/* Waypoints */}
       <section className="space-y-3">
-        <h2 className="font-semibold text-stone-900">Waypoints along the route</h2>
+        <h2 className="font-semibold text-[var(--ink)]">Waypoints along the route</h2>
         {!waypoints?.length ? (
-          <p className="text-sm text-stone-400">No waypoints recorded yet.</p>
+          <p className="text-sm text-[var(--ink-soft)]">No waypoints recorded yet.</p>
         ) : (
           <div className="relative pl-6">
-            <div className="absolute left-2 top-0 bottom-0 w-px bg-stone-200" />
+            <div className="absolute left-2 top-0 bottom-0 w-px bg-[var(--line)]" />
             {waypoints.map((w) => (
               <div key={w.id} className="relative mb-4">
-                <span className="absolute -left-4 flex h-5 w-5 items-center justify-center rounded-full bg-white border border-stone-200 text-xs">
+                <span className="absolute -left-4 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--line)] text-xs">
                   {WAYPOINT_ICONS[w.type]}
                 </span>
-                <div className="rounded-lg border border-stone-200 bg-white px-4 py-3">
-                  <p className="text-sm font-medium text-stone-800">
+                <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] backdrop-blur-md px-4 py-3">
+                  <p className="text-sm font-medium text-[var(--ink)]">
                     {w.name ?? w.type.replace('_', ' ')}
-                    <span className="ml-2 text-xs capitalize text-stone-400">{w.type.replace('_', ' ')}</span>
+                    <span className="ml-2 text-xs capitalize text-[var(--ink-soft)]">{w.type.replace('_', ' ')}</span>
                   </p>
-                  {w.notes && <p className="mt-0.5 text-xs text-stone-500">{w.notes}</p>}
+                  {w.notes && <p className="mt-0.5 text-xs text-[var(--ink-soft)]">{w.notes}</p>}
                 </div>
               </div>
             ))}
@@ -164,18 +164,18 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
       </section>
 
       {/* Link to destination */}
-      <section className="rounded-xl bg-stone-100 p-4 flex items-center justify-between">
+      <section className="rounded-xl bg-[var(--surface)] p-4 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-stone-700">
+          <p className="text-sm font-medium text-[var(--ink-soft)]">
             Planning to work from {journey.destination.name}?
           </p>
-          <p className="text-xs text-stone-400">
+          <p className="text-xs text-[var(--ink-soft)]">
             See WiFi speeds, cafes, and accommodation data.
           </p>
         </div>
         <Link
           href={`/destinations/${journey.destination.slug}`}
-          className="rounded-md bg-white border border-stone-200 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+          className="rounded-md bg-[var(--surface)] border border-[var(--line)] px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--surface-2)]"
         >
           View destination →
         </Link>

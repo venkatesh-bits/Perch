@@ -35,7 +35,7 @@ export default async function JourneysPage({
         <Link
           href="/journeys"
           className={`rounded-full px-3 py-1 text-xs font-medium ${
-            !mode ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+            !mode ? 'bg-[var(--brand)] text-[var(--space)]' : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
           }`}
         >
           All modes
@@ -45,7 +45,7 @@ export default async function JourneysPage({
             key={m}
             href={`/journeys?mode=${m}`}
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              mode === m ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              mode === m ? 'bg-[var(--brand)] text-[var(--space)]' : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
             }`}
           >
             {MODE_ICONS[m]} {m}
@@ -54,7 +54,7 @@ export default async function JourneysPage({
       </div>
 
       {!journeys?.length ? (
-        <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-400">
+        <p className="rounded-xl border border-dashed border-[var(--line)] p-8 text-center text-sm text-[var(--ink-soft)]">
           No journeys yet - add a trip report to seed the first route.
         </p>
       ) : (
@@ -63,14 +63,14 @@ export default async function JourneysPage({
             <Link
               key={j.id}
               href={`/journeys/${j.id}`}
-              className="group flex items-start gap-4 rounded-xl border border-stone-200 bg-white px-5 py-4 hover:border-emerald-300 hover:shadow-sm transition-all"
+              className="group flex items-start gap-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] backdrop-blur-md px-5 py-4 hover:border-[var(--brand-mint)] hover:shadow-sm transition-all"
             >
               <span className="mt-0.5 text-2xl">{MODE_ICONS[j.transport_mode]}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-stone-800 group-hover:text-emerald-700">
+                <p className="font-medium text-[var(--ink)] group-hover:text-[var(--brand)]">
                   {j.origin_name} → {j.destination.name}
                 </p>
-                <p className="mt-0.5 text-xs text-stone-400">
+                <p className="mt-0.5 text-xs text-[var(--ink-soft)]">
                   {[
                     j.distance_km && `${j.distance_km} km`,
                     j.typical_duration_hours && `~${j.typical_duration_hours} hrs`,
@@ -80,10 +80,10 @@ export default async function JourneysPage({
                     .join(' · ')}
                 </p>
                 {j.ghat_warnings && (
-                  <p className="mt-1 text-xs text-amber-600 truncate">⚠ {j.ghat_warnings}</p>
+                  <p className="mt-1 text-xs text-[var(--clay)] truncate">⚠ {j.ghat_warnings}</p>
                 )}
               </div>
-              <span className="shrink-0 text-xs text-stone-300 group-hover:text-emerald-600">
+              <span className="shrink-0 text-xs text-[var(--ink-soft)] group-hover:text-[var(--brand)]">
                 →
               </span>
             </Link>

@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { DestinationPinMapClient } from '@/components/maps/destination-pin-map-client'
 import { getDestination, DESTINATIONS } from '@/lib/data/destinations'
 import { destinationImage } from '@/lib/data/destination-images'
 import { OverviewTab } from '@/components/destinations/overview-tab'
@@ -122,10 +121,6 @@ export default async function DestinationPage({
               <Link href={`/contribute?destination=${slug}`} className="inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[var(--brand-deep)] transition-colors hover:bg-white/90">
                 Add a trip report
               </Link>
-            </div>
-
-            <div className="w-full max-w-sm shrink-0">
-              <DestinationPinMapClient lat={dest.lat} lng={dest.lng} label={dest.name} />
             </div>
           </div>
         </div>
