@@ -45,7 +45,7 @@ export default async function StaysPage({
   return (
     <div>
       {/* Hero */}
-      <section className="on-dark grain relative overflow-hidden bg-[var(--space)]/40">
+      <section className="on-dark grain relative overflow-hidden bg-[var(--ink)]">
         <div className="pointer-events-none absolute -right-16 top-0 h-72 w-72 rounded-full bg-[var(--brand-mint)] opacity-15 blur-[110px]" />
         <div className="pointer-events-none absolute -left-16 bottom-0 h-64 w-64 rounded-full bg-[var(--brand-gold)] opacity-15 blur-[110px]" />
         <div className="relative z-10 mx-auto max-w-6xl px-5 py-16">

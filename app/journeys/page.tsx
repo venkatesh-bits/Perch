@@ -35,7 +35,7 @@ export default async function JourneysPage({
         <Link
           href="/journeys"
           className={`rounded-full px-3 py-1 text-xs font-medium ${
-            !mode ? 'bg-[var(--brand)] text-[var(--space)]' : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
+            !mode ? 'bg-[var(--brand)] text-[var(--paper)]' : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
           }`}
         >
           All modes
@@ -45,7 +45,7 @@ export default async function JourneysPage({
             key={m}
             href={`/journeys?mode=${m}`}
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              mode === m ? 'bg-[var(--brand)] text-[var(--space)]' : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
+              mode === m ? 'bg-[var(--brand)] text-[var(--paper)]' : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
             }`}
           >
             {MODE_ICONS[m]} {m}

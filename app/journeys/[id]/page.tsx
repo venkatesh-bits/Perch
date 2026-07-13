@@ -64,7 +64,7 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
           </div>
           <Link
             href={`/contribute?destination=${journey.destination_id}`}
-            className="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-semibold text-[var(--space)] hover:brightness-110"
+            className="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-semibold text-[var(--paper)] hover:bg-[var(--brand-deep)]"
           >
             Add trip report
           </Link>

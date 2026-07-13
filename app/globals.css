@@ -1,45 +1,46 @@
 @import "tailwindcss";
 
-/* ─── Spatial design tokens ────────────────────────────────────────────────────
-   "Aurora over the mountains at night": a deep-space base with bioluminescent
-   mint / violet / gold accents. The whole UI is token-driven, so flipping these
-   re-skins every page. Dark is the only theme. */
+/* ─── Light design tokens ──────────────────────────────────────────────────────
+   "Morning in the hills": warm paper base, deep pine brand, soft mint / gold /
+   heather accents. The UI is token-driven, so these cascade everywhere. Dark
+   panels (heroes, CTA) opt in with explicit backgrounds + the .on-dark class. */
 :root {
-  --space:        #05070E;  /* deepest void                          */
-  --paper:        #080B14;  /* page background                       */
-  --paper-deep:   #0B0F1B;  /* deeper panels / dark hero base        */
-  --surface:      rgb(255 255 255 / 0.045);  /* glass card fill      */
-  --surface-2:    rgb(255 255 255 / 0.07);   /* raised glass         */
-  --ink:          #EAEDF8;  /* near-white text                       */
-  --ink-soft:     #98A1BC;  /* muted slate text                      */
-  --line:         rgb(255 255 255 / 0.10);   /* hairline border      */
-  --hairline:     rgb(255 255 255 / 0.20);   /* brighter hairline    */
+  --space:        #10231C;  /* near-black pine - text on gold/mint fills   */
+  --paper:        #F7F4EF;  /* warm off-white page background              */
+  --paper-deep:   #EFEAE1;  /* deeper paper surface                        */
+  --surface:      #FFFFFF;  /* card fill                                   */
+  --surface-2:    #FAF7F1;  /* raised / hover surface                      */
+  --ink:          #1A1714;  /* near-black text                             */
+  --ink-soft:     #6B6259;  /* muted text                                  */
+  --line:         #E4DDD2;  /* warm borders                                */
+  --hairline:     #EDE7DC;  /* lighter inner seams                         */
 
-  --brand:        #2FE3A2;  /* electric mint-teal (primary accent)   */
-  --brand-deep:   #0E3D30;  /* deep teal (dark hero base)            */
-  --brand-mint:   #7CF2CE;  /* light mint glow                       */
-  --brand-gold:   #F6C955;  /* luminous gold                         */
-  --brand-violet: #8E7BF2;  /* aurora violet                         */
-  --clay:         #FF7E62;  /* warm warning                          */
+  --brand:        #1C5240;  /* deep pine green                             */
+  --brand-deep:   #143C2F;
+  --brand-mint:   #7FB89C;  /* soft mint accent                            */
+  --brand-gold:   #E0A93B;  /* warm gold pop                               */
+  --brand-violet: #9A8FD0;  /* soft heather (aurora wash only)             */
+  --clay:         #C2603E;  /* warm clay (warnings)                        */
 
-  /* Glows replace the old warm shadows: cards lift on a colored halo. */
-  --glow-rgb: 47 227 162;            /* brand mint, space-separated   */
-  --elev-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  /* Warm-tinted layered shadows - cards lift off the paper in real light,
+     never a flat digital grey. */
+  --elev-rgb: 30 24 18;
+  --glow-rgb: 28 82 64;               /* pine, for focus/hover accents      */
+  --elev-xs: 0 1px 2px rgb(var(--elev-rgb) / 0.05);
   --elev-sm:
-    0 1px 2px rgb(0 0 0 / 0.5),
-    0 4px 14px -4px rgb(0 0 0 / 0.55);
+    0 1px 2px   rgb(var(--elev-rgb) / 0.04),
+    0 2px 6px  -1px rgb(var(--elev-rgb) / 0.06);
   --elev-md:
-    0 2px 6px rgb(0 0 0 / 0.5),
-    0 12px 32px -8px rgb(0 0 0 / 0.6),
-    0 0 0 1px rgb(255 255 255 / 0.04) inset;
+    0 1px 2px   rgb(var(--elev-rgb) / 0.05),
+    0 6px 16px -4px rgb(var(--elev-rgb) / 0.10),
+    0 12px 28px -8px rgb(var(--elev-rgb) / 0.08);
   --elev-lg:
-    0 8px 24px -6px rgb(0 0 0 / 0.65),
-    0 24px 60px -16px rgb(0 0 0 / 0.7),
-    0 0 32px -6px rgb(var(--glow-rgb) / 0.28),
-    0 0 0 1px rgb(255 255 255 / 0.06) inset;
+    0 2px 4px   rgb(var(--elev-rgb) / 0.05),
+    0 12px 28px -8px rgb(var(--elev-rgb) / 0.12),
+    0 28px 56px -16px rgb(var(--elev-rgb) / 0.16);
 
   --motion-out:    cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-spring: cubic-bezier(0.34, 1.5, 0.5, 1);
+  --motion-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
 /* Expose tokens to Tailwind v4 utilities (bg-brand, text-ink, etc.) */
@@ -64,16 +65,16 @@
 /* ─── Base ─────────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
-  background: var(--space);
+  background: var(--paper);
 }
 body {
-  /* Base aurora wash (always present), with the animated blobs in
-     SpatialBackground drifting on top for life. */
+  /* Soft fixed washes give the paper depth; the animated aurora blobs in
+     SpatialBackground drift gently on top of these. */
   background-color: var(--paper);
   background-image:
-    radial-gradient(75rem 48rem at 12% -8%,  rgb(47 227 162 / 0.16), transparent 60%),
-    radial-gradient(70rem 50rem at 102% 2%,  rgb(142 123 242 / 0.17), transparent 60%),
-    radial-gradient(60rem 46rem at 50% 116%, rgb(246 201 85 / 0.09), transparent 60%);
+    radial-gradient(60rem 32rem at 50% -8%,  rgb(127 184 156 / 0.18), transparent 70%),
+    radial-gradient(48rem 28rem at 100% 2%,  rgb(224 169 59 / 0.10),  transparent 65%),
+    radial-gradient(52rem 40rem at 0% 18%,   rgb(154 143 208 / 0.08), transparent 70%);
   background-attachment: fixed;
   background-repeat: no-repeat;
   color: var(--ink);
@@ -84,7 +85,22 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
+  /* clip (not hidden): hidden would turn body into its own scroll container
+     and break viewport scrolling / scroll restoration. */
+  overflow-x: clip;
+}
+
+/* Faint topographic contours fixed behind everything - the maps / trip-planner
+   feel, without competing with content. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='760' height='760' viewBox='0 0 760 760'%3E%3Cg fill='none' stroke='%231C5240' stroke-opacity='0.05' stroke-width='1.1'%3E%3Cpath d='M-40 200C140 120 300 280 480 200S760 120 860 220'/%3E%3Cpath d='M-40 300C160 220 320 360 500 290S780 220 880 320'/%3E%3Cpath d='M-40 410C150 340 340 470 520 400S800 330 900 430'/%3E%3Cpath d='M-40 530C170 450 330 590 520 520S790 450 900 540'/%3E%3Cpath d='M-40 650C150 580 340 700 520 640S800 560 900 660'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 760px 760px;
 }
 
 h1, h2, h3 { text-wrap: balance; }
@@ -92,21 +108,21 @@ p { text-wrap: pretty; }
 
 .font-display {
   font-family: var(--font-display), Georgia, serif;
-  letter-spacing: -0.02em;
-  line-height: 1.04;
+  letter-spacing: -0.018em;
+  line-height: 1.08;
 }
 
-::selection { background: var(--brand); color: var(--space); }
+::selection { background: var(--brand); color: var(--paper); }
 
-/* Custom scrollbar to match the void. */
+/* Subtle light scrollbar. */
 ::-webkit-scrollbar { width: 11px; height: 11px; }
-::-webkit-scrollbar-track { background: var(--space); }
+::-webkit-scrollbar-track { background: var(--paper); }
 ::-webkit-scrollbar-thumb {
-  background: rgb(255 255 255 / 0.12);
+  background: var(--line);
   border-radius: 99px;
-  border: 3px solid var(--space);
+  border: 3px solid var(--paper);
 }
-::-webkit-scrollbar-thumb:hover { background: rgb(var(--glow-rgb) / 0.45); }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-mint); }
 
 /* ─── Accessible focus ─────────────────────────────────────────────────────── */
 *:focus-visible {
@@ -114,8 +130,13 @@ p { text-wrap: pretty; }
   outline-offset: 2px;
   border-radius: 0.4rem;
 }
+/* On dark hero/CTA panels a pine ring would vanish - use a light one there. */
+.on-dark *:focus-visible,
+.on-dark:focus-visible {
+  outline-color: var(--brand-mint);
+}
 
-/* ─── Spatial background (rendered by components/fx/spatial-background) ──────── */
+/* ─── Aurora washes (rendered by components/fx/spatial-background) ───────────── */
 @keyframes aurora-drift {
   0%   { transform: translate3d(-8%, -4%, 0) scale(1.1) rotate(0deg); }
   50%  { transform: translate3d(8%, 6%, 0) scale(1.25) rotate(8deg); }
@@ -126,90 +147,54 @@ p { text-wrap: pretty; }
   50%  { transform: translate3d(-6%, -6%, 0) scale(1.05); }
   100% { transform: translate3d(6%, 4%, 0) scale(1.2); }
 }
-@keyframes grid-pan {
-  from { background-position: 0 0; }
-  to   { background-position: 0 -800px; }
-}
-@keyframes twinkle {
-  0%, 100% { opacity: 0.25; }
-  50%      { opacity: 0.9; }
-}
 
 .fx-layer { position: fixed; inset: 0; pointer-events: none; }
 
 .fx-aurora {
-  filter: blur(72px) saturate(150%);
-  opacity: 0.72;
+  filter: blur(80px) saturate(115%);
+  opacity: 0.5;
   will-change: transform;
 }
 .fx-aurora-1 {
-  background: radial-gradient(closest-side, rgb(47 227 162 / 0.72), transparent);
-  width: 72vw; height: 72vw; top: -22vw; left: -14vw;
-  animation: aurora-drift 26s ease-in-out infinite;
+  background: radial-gradient(closest-side, rgb(127 184 156 / 0.4), transparent);
+  width: 70vw; height: 70vw; top: -24vw; left: -14vw;
+  animation: aurora-drift 30s ease-in-out infinite;
 }
 .fx-aurora-2 {
-  background: radial-gradient(closest-side, rgb(142 123 242 / 0.66), transparent);
-  width: 66vw; height: 66vw; top: -8vw; right: -16vw; left: auto;
-  animation: aurora-drift-2 32s ease-in-out infinite;
+  background: radial-gradient(closest-side, rgb(154 143 208 / 0.28), transparent);
+  width: 62vw; height: 62vw; top: -10vw; right: -16vw; left: auto;
+  animation: aurora-drift-2 36s ease-in-out infinite;
 }
 .fx-aurora-3 {
-  background: radial-gradient(closest-side, rgb(246 201 85 / 0.42), transparent);
-  width: 56vw; height: 56vw; bottom: -16vw; left: 22vw; top: auto;
-  animation: aurora-drift 38s ease-in-out infinite reverse;
+  background: radial-gradient(closest-side, rgb(224 169 59 / 0.22), transparent);
+  width: 52vw; height: 52vw; bottom: -18vw; left: 20vw; top: auto;
+  animation: aurora-drift 42s ease-in-out infinite reverse;
 }
 
-/* Perspective grid floor receding into the distance. */
-.fx-grid {
-  inset: 38% -50% -20% -50%;
-  background-image:
-    linear-gradient(rgb(124 242 206 / 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(124 242 206 / 0.14) 1px, transparent 1px);
-  background-size: 56px 56px;
-  transform: perspective(420px) rotateX(68deg);
-  transform-origin: top center;
-  mask-image: linear-gradient(to bottom, transparent, #000 32%, transparent 90%);
-  animation: grid-pan 14s linear infinite;
-  opacity: 0.6;
-}
-
-.fx-stars { background-repeat: repeat; opacity: 0.55; }
-.fx-vignette {
-  background: radial-gradient(135% 95% at 50% 0%, transparent 62%, var(--space) 108%);
-}
-
-/* ─── Glass surfaces ───────────────────────────────────────────────────────── */
+/* ─── Cards & surfaces ─────────────────────────────────────────────────────── */
 .card {
   position: relative;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1.25rem;
   box-shadow: var(--elev-sm);
-  backdrop-filter: blur(14px) saturate(130%);
-  -webkit-backdrop-filter: blur(14px) saturate(130%);
-  transition: transform 0.4s var(--motion-out), box-shadow 0.4s var(--motion-out), border-color 0.4s var(--motion-out);
+  transition: transform 0.35s var(--motion-out), box-shadow 0.35s var(--motion-out), border-color 0.35s var(--motion-out);
 }
 .card-hover:hover {
-  transform: translateY(-5px);
-  border-color: rgb(var(--glow-rgb) / 0.5);
+  transform: translateY(-4px);
+  border-color: var(--brand-mint);
   box-shadow: var(--elev-lg);
 }
 .card > :first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
 
-.glass {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(16px) saturate(130%);
-  -webkit-backdrop-filter: blur(16px) saturate(130%);
-}
-
-/* Luminous gradient text for hero accents. */
+/* Luminous gradient text for hero accents (sits on the dark pine hero). */
 .text-grad {
-  background: linear-gradient(100deg, var(--brand-mint), var(--brand) 40%, var(--brand-violet));
+  background: linear-gradient(100deg, var(--brand-mint), var(--brand-gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-.glow-text { text-shadow: 0 0 24px rgb(var(--glow-rgb) / 0.45); }
+.glow-text { text-shadow: 0 0 28px rgb(224 169 59 / 0.28); }
 
 /* ─── Scroll-reveal (toggled by components/fx/reveal) ──────────────────────── */
 .reveal {
@@ -227,7 +212,7 @@ p { text-wrap: pretty; }
   transform-style: preserve-3d;
 }
 
-/* ─── Entrance + marquee (kept) ────────────────────────────────────────────── */
+/* ─── Entrance + marquee ───────────────────────────────────────────────────── */
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 .rise { animation: rise 0.8s var(--motion-out) both; }
@@ -252,38 +237,41 @@ p { text-wrap: pretty; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* ─── MapLibre theming (dark) ──────────────────────────────────────────────── */
+/* ─── MapLibre theming (light) ─────────────────────────────────────────────── */
 .maplibregl-popup-content {
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: var(--paper-deep);
+  background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 12px 40px -8px rgb(0 0 0 / 0.6);
+  box-shadow: 0 12px 40px -8px rgb(26 23 20 / 0.2);
   padding: 12px 14px;
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 .maplibregl-popup-close-button { font-size: 18px; color: var(--ink-soft); padding: 2px 7px; }
-.maplibregl-ctrl-group { border-radius: 10px !important; overflow: hidden; }
-.maplibregl-ctrl-attrib { font-size: 10px; background: rgb(8 11 20 / 0.8) !important; }
-.maplibregl-ctrl-attrib a { color: var(--ink-soft); }
+.maplibregl-ctrl-group {
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 16px -4px rgb(26 23 20 / 0.18) !important;
+}
+.maplibregl-ctrl-attrib { font-size: 10px; background: rgb(247 244 239 / 0.8) !important; }
 
-/* ─── Buttons (glowing) ────────────────────────────────────────────────────── */
+/* ─── Buttons ──────────────────────────────────────────────────────────────── */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   border-radius: 0.85rem;
-  background: linear-gradient(180deg, var(--brand-mint), var(--brand));
-  color: var(--space);
+  background: var(--brand);
+  color: var(--paper);
   padding: 0.7rem 1.3rem;
   font-size: 0.875rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.005em;
-  box-shadow: 0 0 0 1px rgb(var(--glow-rgb) / 0.4), 0 8px 22px -8px rgb(var(--glow-rgb) / 0.55);
-  transition: transform 0.24s var(--motion-spring), box-shadow 0.24s var(--motion-out), filter 0.2s;
+  box-shadow: var(--elev-sm);
+  transition: background 0.2s var(--motion-out), transform 0.22s var(--motion-spring), box-shadow 0.22s var(--motion-out);
 }
-.btn-primary:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 0 0 1px rgb(var(--glow-rgb) / 0.6), 0 12px 30px -8px rgb(var(--glow-rgb) / 0.75); }
-.btn-primary:active { transform: translateY(0); transition-duration: 0.08s; }
+.btn-primary:hover { background: var(--brand-deep); transform: translateY(-2px); box-shadow: var(--elev-md); }
+.btn-primary:active { transform: translateY(0); box-shadow: var(--elev-xs); transition-duration: 0.08s; }
 
 .btn-ghost {
   display: inline-flex;
@@ -297,18 +285,17 @@ p { text-wrap: pretty; }
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.005em;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: border-color 0.24s var(--motion-out), transform 0.24s var(--motion-spring), box-shadow 0.24s var(--motion-out);
+  box-shadow: var(--elev-xs);
+  transition: border-color 0.22s var(--motion-out), transform 0.22s var(--motion-spring), box-shadow 0.22s var(--motion-out);
 }
-.btn-ghost:hover { border-color: rgb(var(--glow-rgb) / 0.55); transform: translateY(-2px); box-shadow: 0 0 24px -8px rgb(var(--glow-rgb) / 0.5); }
-.btn-ghost:active { transform: translateY(0); transition-duration: 0.08s; }
+.btn-ghost:hover { border-color: var(--brand-mint); transform: translateY(-2px); box-shadow: var(--elev-sm); }
+.btn-ghost:active { transform: translateY(0); box-shadow: none; transition-duration: 0.08s; }
 
 /* ─── Reduced motion ───────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .rise, .fade { animation: none; }
-  .fx-aurora, .fx-grid { animation: none; }
+  .fx-aurora { animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .btn-primary, .btn-ghost, .card { transition: none; }
   .btn-primary:hover, .btn-ghost:hover, .card-hover:hover, .tilt { transform: none; }

@@ -51,11 +51,9 @@ export default async function HomePage() {
   return (
     <div>
       {/* ─── HERO ───────────────────────────────────────────────────────────── */}
-      <section className="on-dark grain relative overflow-hidden">
-        {/* subtle scrim so the headline stays legible over the aurora */}
-        <div className="pointer-events-none absolute inset-0 bg-[var(--space)]/35" />
+      <section className="on-dark grain relative overflow-hidden bg-[var(--brand-deep)]">
         {/* glowing orbs */}
-        <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-[var(--brand-mint)] opacity-25 blur-[120px]" />
+        <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-[var(--brand-mint)] opacity-20 blur-[120px]" />
         <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-[var(--brand-gold)] opacity-15 blur-[120px]" />
 
         {/* layered mountain silhouettes */}
@@ -180,7 +178,7 @@ export default async function HomePage() {
 
         {/* ─── EV CHARGING TEASER ───────────────────────────────────────────── */}
         <Reveal>
-        <section className="on-dark grain glass relative overflow-hidden rounded-3xl p-8 shadow-[var(--elev-lg)] sm:p-12">
+        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--ink)] p-8 shadow-[var(--elev-lg)] sm:p-12">
           <div className="pointer-events-none absolute -right-10 -top-10 h-64 w-64 rounded-full bg-[var(--brand-gold)] opacity-10 blur-[100px]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
             <div className="space-y-4">
@@ -193,7 +191,7 @@ export default async function HomePage() {
                 maps the operators keep current themselves - PlugShare and the government e-AMRIT map for
                 everything at once, plus each network from Tata Power and Ather to ChargeMOD.
               </p>
-              <Link href="/charging" className="mt-2 inline-flex items-center gap-1.5 rounded-[0.85rem] bg-[var(--brand-gold)] px-5 py-2.5 text-sm font-semibold text-[var(--space)] shadow-[0_0_0_1px_rgb(246_201_85/0.4),0_10px_26px_-8px_rgb(246_201_85/0.6)] transition hover:-translate-y-0.5 hover:brightness-110">
+              <Link href="/charging" className="mt-2 inline-flex items-center gap-1.5 rounded-[0.85rem] bg-[var(--brand-gold)] px-5 py-2.5 text-sm font-semibold text-[var(--space)] shadow-[0_10px_26px_-8px_rgb(224_169_59/0.55)] transition hover:-translate-y-0.5 hover:brightness-105">
                 See the charging maps →
               </Link>
             </div>
@@ -240,7 +238,7 @@ export default async function HomePage() {
 
         {/* ─── CTA ──────────────────────────────────────────────────────────── */}
         <Reveal>
-        <section className="on-dark grain glass relative overflow-hidden rounded-3xl border-[var(--brand)]/30 px-8 py-12 shadow-[var(--elev-lg)] sm:px-12">
+        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--brand)] px-8 py-12 shadow-[var(--elev-lg)] sm:px-12">
           <svg viewBox="0 0 200 200" className="pointer-events-none absolute right-0 top-0 h-full opacity-[0.08]" aria-hidden="true">
             <path d="M0,200 L50,90 L90,140 L140,40 L180,100 L200,30 L200,200 Z" fill="white" />
           </svg>

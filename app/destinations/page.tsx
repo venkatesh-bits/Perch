@@ -25,7 +25,7 @@ export default async function DestinationsPage() {
 
   return (
     <div>
-      <section className="on-dark grain relative overflow-hidden bg-[var(--space)]/40">
+      <section className="on-dark grain relative overflow-hidden bg-[var(--brand-deep)]">
         <div className="pointer-events-none absolute -left-20 top-0 h-64 w-64 rounded-full bg-[var(--brand-mint)] opacity-20 blur-[110px]" />
         <div className="relative z-10 mx-auto max-w-6xl px-5 py-14">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand-mint)]">
