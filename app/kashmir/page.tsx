@@ -13,7 +13,7 @@ export const revalidate = 1800
 export const metadata: Metadata = {
   title: "Kashmir Circuit '26 - trip log",
   description:
-    'Eleven days from Chandigarh over Sach Pass into Kishtwar and Warwan, across the Budgam meadows to Bangus, Keran and Gurez, then Kargil, Zanskar and home over Shinku La.',
+    'Nine days on four Himalayan 450s: Chandigarh to Manali, over Shinku La into Zanskar, then Kargil, Sonamarg and Gurez, a checkpoint turn-back short of Warwan, and a 2 am run to Pathankot.',
   robots: { index: false, follow: false },
 }
 
@@ -31,15 +31,15 @@ function py(m: number): number {
 function ElevationProfile() {
   const line = TRIP_DAYS.map((d, i) => `${px(i)},${py(d.highM)}`).join(' ')
   const area = `${px(0)},${py(0)} ${line} ${px(TRIP_DAYS.length - 1)},${py(0)}`
-  // Selective labels only - the two poles of the story.
-  const labelled = new Set(['Sach Pass', 'Shinku La'])
+  // Selective labels only - the two big Zanskar passes.
+  const labelled = new Set(['Shinku La', 'Pensi La'])
 
   return (
     <svg
       viewBox={`0 0 ${CHART.w} ${CHART.h}`}
       className="w-full"
       role="img"
-      aria-label="Elevation profile: the highest point crossed on each of the 11 days, peaking at Shinku La, 5,091 metres, on day 10"
+      aria-label={`Elevation profile: the highest point crossed on each of the ${TRIP_DAYS.length} days, peaking at Shinku La, 5,091 metres, on day 2`}
     >
       {[1000, 3000, 5000].map((m) => (
         <g key={m}>
@@ -88,19 +88,20 @@ export default async function KashmirTripPage() {
         <div className="relative z-10 mx-auto max-w-6xl px-5 py-16 sm:py-20">
           <p className="rise inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-[var(--brand-mint)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-mint)]" />
-            Trip log · {TRIP_META.dates}
+            Trip log · {TRIP_META.dates} · four Himalayan 450s
           </p>
           <h1 className="rise delay-1 mt-5 max-w-3xl font-display text-5xl leading-[1.02] tracking-tight text-white sm:text-7xl">
             The <span className="italic text-grad glow-text">Kashmir</span> Circuit.
           </h1>
           <p className="rise delay-2 mt-5 max-w-xl text-lg leading-relaxed text-white/70">
-            Eleven days, one loop: over Sach Pass into the Chenab gorge, through Warwan and the
-            Budgam meadows, out along the Line of Control to Bangus, Keran and Gurez, then east
-            through Kargil into Zanskar - and home over Shinku La.
+            Nine days, four friends, one loop: Chandigarh to Manali, over Shinku La into Zanskar
+            and a brutal night camped under Gonbo Rangjon, then Kargil, Sonamarg and the Gurez
+            valley - until an army checkpoint turned us back short of Warwan and we rode through
+            the rain to Pathankot, reaching at 2 am.
           </p>
           <div className="rise delay-3 mt-8 flex flex-wrap gap-8">
             {[
-              { n: `${TRIP_META.days}`, l: 'days on the road' },
+              { n: `${TRIP_META.riders}`, l: `riders on ${TRIP_META.bike}s` },
               { n: `~${TRIP_META.distanceKm.toLocaleString()} km`, l: 'round trip' },
               { n: `${TRIP_META.passes}`, l: 'mountain passes' },
               { n: `${TRIP_META.maxAltM.toLocaleString()} m`, l: `high point · ${TRIP_META.maxAltName}` },
@@ -115,13 +116,29 @@ export default async function KashmirTripPage() {
       </section>
 
       <div className="mx-auto max-w-6xl space-y-12 px-5 py-12">
+        {/* ─── Prologue ─── */}
+        <Reveal>
+        <section className="card p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">Before the ride</p>
+          <h2 className="mt-1 font-display text-2xl tracking-tight text-[var(--ink)]">
+            Chennai to the foothills
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--ink-soft)]">
+            Four of us flew Chennai to Chandigarh - the closest airport to the ranges we were
+            after - and checked into a hotel in Sector 42. The machines were four rented
+            Himalayan 450s at ₹2,000 per bike per day for nine days, paid fully in advance;
+            one day&apos;s rent had gone ahead from Chennai as the booking deposit.
+          </p>
+        </section>
+        </Reveal>
+
         {/* ─── Map ─── */}
         <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">The loop</p>
               <h2 className="mt-1 font-display text-2xl tracking-tight text-[var(--ink)] sm:text-3xl">
-                Eleven days on one map
+                Nine days on one map
               </h2>
             </div>
             <p className="text-xs text-[var(--ink-soft)]">Route line is illustrative, not navigation.</p>
@@ -136,8 +153,9 @@ export default async function KashmirTripPage() {
             Highest point crossed, day by day
           </h2>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            From the plains at 350 m to {TRIP_META.maxAltName} at {TRIP_META.maxAltM.toLocaleString()} m
-            on day 10. Hover a dot for the day&apos;s numbers.
+            Manali sits near 2,000 m; two days later we crossed {TRIP_META.maxAltName} at{' '}
+            {TRIP_META.maxAltM.toLocaleString()} m and camped at 4,100 m. That single spike on day 2 is
+            the whole story of the worst night. Hover a dot for the day&apos;s numbers.
           </p>
           <div className="mt-4">
             <ElevationProfile />
@@ -221,14 +239,54 @@ export default async function KashmirTripPage() {
           </ol>
         </section>
 
+        {/* ─── Cost + lessons ─── */}
+        <Reveal>
+        <section className="grid gap-5 sm:grid-cols-2">
+          <div className="card p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">What it cost</p>
+            <h2 className="mt-1 font-display text-xl tracking-tight text-[var(--ink)]">The numbers that mattered</h2>
+            <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-[var(--ink-soft)]">
+              <li className="flex items-baseline justify-between gap-3 border-b border-[var(--line)] pb-2.5">
+                <span>4 Himalayan 450s · ₹2,000/bike/day · 9 days</span>
+                <span className="shrink-0 font-semibold text-[var(--ink)]">₹72,000</span>
+              </li>
+              <li>Paid in full up front, with one day&apos;s rent sent from Chennai as the booking deposit. We finished a day early - the unused day was not refunded.</li>
+              <li className="flex items-baseline justify-between gap-3 border-t border-[var(--line)] pt-2.5">
+                <span>Dal Lake hotel, per head - best value of the trip</span>
+                <span className="shrink-0 font-semibold text-[var(--ink)]">₹1,000</span>
+              </li>
+              <li>Rooms above the Benz restaurant in Dawar were the priciest for what you actually get; the Gurez location earns most of it back.</li>
+            </ul>
+          </div>
+          <div className="card p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--clay)]">What we&apos;d tell the next rider</p>
+            <h2 className="mt-1 font-display text-xl tracking-tight text-[var(--ink)]">Learned the hard way</h2>
+            <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--ink-soft)]">
+              {[
+                'Diamox and relentless hydration before you sleep high. Manali to a 4,100 m camp in one day is too fast - the Gonbo Rangjon night proved it. Carry oxygen.',
+                'Remote camps like Gonbo Rangjon have drinking water and nothing else - no hot water, nothing to wash with. Go fully prepared, or push on to Padum.',
+                'Warwan is closed to non-local tourists right now. Do not build a plan around a valley you might be turned back from.',
+                'Carry a puncture kit, and stay off the Jammu highway after dark - ours went flat in the rain at 9:30 pm.',
+              ].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--clay)]" /> {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+        </Reveal>
+
         {/* ─── Footnote ─── */}
         <Reveal>
         <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm leading-relaxed text-[var(--ink-soft)]">
-          <span className="font-semibold text-[var(--ink)]">The fine print that made it work.</span>{' '}
-          Government photo ID at every checkpoint, a postpaid SIM (prepaid is dead in J&amp;K), cash
-          for the valleys, offline maps, and a buffer day at the end that thankfully stayed unused.
-          Bangus, Keran, Gurez and the Kishtwar roads deserve respect - check conditions locally
-          before repeating any of this.
+          <span className="font-semibold text-[var(--ink)]">The honest ending.</span>{' '}
+          We rode to share the mountains, not to conquer a checklist - and the mountains had the
+          last word. The checkpoint short of Warwan was final (polite, but final), the tyre gave out
+          in the rain, and the best night&apos;s sleep of the whole loop was a ₹1,000 room by Dal Lake.
+          Government photo ID at every checkpoint, a postpaid SIM (prepaid is dead in J&amp;K), and cash
+          for the valleys where cards and signal both give out. Check the current position locally
+          before you point a wheel at any of this.
         </p>
         </Reveal>
       </div>
