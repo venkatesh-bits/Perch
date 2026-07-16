@@ -2,6 +2,7 @@ import { DestinationsBrowser } from '@/components/destinations/destinations-brow
 import { DESTINATIONS } from '@/lib/data/destinations'
 import { getWifiBySlug } from '@/lib/queries/home'
 import { getWeatherBatch } from '@/lib/queries/weather'
+import { getDestinationOverrides } from '@/lib/queries/destination-overrides'
 
 export const revalidate = 3600
 
@@ -14,9 +15,10 @@ export const metadata = {
 export default async function DestinationsPage() {
   // Optional community WiFi layer + live weather for every card, both fetched
   // server-side. Weather for all destinations is ONE batched Open-Meteo request.
-  const [wifiSummaryBySlug, weatherBySlug] = await Promise.all([
+  const [wifiSummaryBySlug, weatherBySlug, overrides] = await Promise.all([
     getWifiBySlug(),
     getWeatherBatch(DESTINATIONS.map((d) => ({ slug: d.slug, lat: d.lat, lng: d.lng }))),
+    getDestinationOverrides(),
   ])
   const wifiBySlug: Record<string, { avg: number | null; count: number }> = {}
   for (const [slug, w] of Object.entries(wifiSummaryBySlug)) {
@@ -43,7 +45,14 @@ export default async function DestinationsPage() {
       </section>
 
       <div className="mx-auto max-w-6xl px-5 py-10">
-        <DestinationsBrowser wifiBySlug={wifiBySlug} weatherBySlug={weatherBySlug} />
+        {/* Only the override map travels over the wire - the browser already
+            imports the static catalogue, so the 97 entries are not duplicated
+            into the RSC payload. */}
+        <DestinationsBrowser
+          wifiBySlug={wifiBySlug}
+          weatherBySlug={weatherBySlug}
+          overrides={overrides}
+        />
       </div>
     </div>
   )

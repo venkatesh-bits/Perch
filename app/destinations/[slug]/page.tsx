@@ -4,6 +4,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getDestination, DESTINATIONS } from '@/lib/data/destinations'
 import { destinationImage } from '@/lib/data/destination-images'
+import {
+  applyOverride, getDestinationOverride, overrideImageUrl,
+} from '@/lib/queries/destination-overrides'
 import { OverviewTab } from '@/components/destinations/overview-tab'
 import { StaysTab } from '@/components/destinations/stays-tab'
 import {
@@ -19,8 +22,10 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const d = getDestination(slug)
-  if (!d) return { title: 'Destination not found' }
+  const base = getDestination(slug)
+  if (!base) return { title: 'Destination not found' }
+  // An overridden summary is the one that should show up in search results too.
+  const d = applyOverride(base, await getDestinationOverride(slug))
   return {
     title: `${d.name} - remote work & road trip guide`,
     description: d.summary,
@@ -58,10 +63,20 @@ export default async function DestinationPage({
 
   // Catalogue is the source of truth for the destination itself - this renders
   // immediately. The Supabase community layer streams in behind Suspense below.
-  const dest = getDestination(slug)
-  if (!dest) notFound()
+  const base = getDestination(slug)
+  if (!base) notFound()
 
-  const heroImg = destinationImage(slug)
+  // The owner's override layer wins where it has a value. It uses the
+  // cookie-less public client, so this page still statically generates and
+  // falls back to the catalogue whenever the DB is unreachable.
+  const override = await getDestinationOverride(slug)
+  const dest = applyOverride(base, override)
+
+  const staticImg = destinationImage(slug)
+  const replacementImg = overrideImageUrl(override)
+  const heroImg = replacementImg
+    ? { url: replacementImg, attribution: null, license: null, sourceUrl: null }
+    : staticImg
 
   return (
     <div>
@@ -79,7 +94,9 @@ export default async function DestinationPage({
         ) : null}
         {/* Scrim keeps the white hero text legible over any photo (bright or dark). */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/40" />
-        {heroImg ? (
+        {/* Credit belongs to the Wikimedia photo only. An owner-uploaded
+            replacement is his own, so it carries no attribution line. */}
+        {heroImg?.sourceUrl ? (
           <a
             href={heroImg.sourceUrl}
             target="_blank"

@@ -7,7 +7,10 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // The contribute wizard is interactive-only; no value to index.
-      disallow: ['/contribute'],
+      // /admin is the owner's panel - keep it out of search entirely. It also
+      // sends noindex response headers (app/admin/layout.tsx) and never appears
+      // in sitemap.ts, which lists its routes explicitly.
+      disallow: ['/contribute', '/admin'],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,

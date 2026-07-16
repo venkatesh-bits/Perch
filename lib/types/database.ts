@@ -148,3 +148,42 @@ export interface JourneyWithDestination extends Journey {
   destination: Destination
   waypoints?: Waypoint[]
 }
+
+// ─── Admin CMS layer (migration 004) ─────────────────────────────────────────
+
+export type TripMediaKind = 'photo' | 'video'
+
+/** A photo or video on a trip log page. `day` null = general gallery. */
+export interface TripMedia {
+  id: string
+  trip_slug: string
+  day: number | null
+  kind: TripMediaKind
+  url: string
+  caption: string | null
+  sort: number
+  created_at: string
+}
+
+export interface Post {
+  id: string
+  slug: string
+  title: string
+  body: string | null
+  cover_url: string | null
+  published: boolean
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Per-field overrides merged OVER the static destination catalogue.
+ * A null field means "keep the static default".
+ */
+export interface DestinationOverride {
+  slug: string
+  summary: string | null
+  image_url: string | null
+  remote_work_note: string | null
+  updated_at: string
+}

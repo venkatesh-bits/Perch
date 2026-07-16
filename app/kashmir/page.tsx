@@ -4,7 +4,9 @@ import Image from 'next/image'
 import { TRIP_DAYS, TRIP_META } from '@/lib/data/kashmir-trip'
 import { TripFlyoverClient } from '@/components/trip/trip-flyover-client'
 import { getWeatherBatch } from '@/lib/queries/weather'
+import { getTripMedia } from '@/lib/queries/trip-media'
 import { WeatherChip } from '@/components/destinations/weather-chip'
+import { DayMedia, GeneralMediaGallery } from '@/components/trip/trip-media'
 import { Reveal } from '@/components/fx/reveal'
 
 export const revalidate = 1800
@@ -75,9 +77,13 @@ function ElevationProfile() {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default async function KashmirTripPage() {
-  const weather = await getWeatherBatch(
-    TRIP_DAYS.map((d) => ({ slug: `day-${d.day}`, lat: d.lat, lng: d.lng })),
-  )
+  // Both are optional layers over the written log: weather is live, media is
+  // whatever has been uploaded through /admin. Either failing leaves the page
+  // rendering exactly as it does with none of it.
+  const [weather, media] = await Promise.all([
+    getWeatherBatch(TRIP_DAYS.map((d) => ({ slug: `day-${d.day}`, lat: d.lat, lng: d.lng }))),
+    getTripMedia('kashmir'),
+  ])
 
   return (
     <div>
@@ -220,6 +226,10 @@ export default async function KashmirTripPage() {
                         Open the {d.to.split('·')[0].split('/')[0].trim()} guide →
                       </Link>
                     ) : null}
+
+                    {/* Uploaded photos/videos for this day. Renders nothing when
+                        the day has none, which is the default state. */}
+                    <DayMedia items={media.byDay[d.day]} />
                   </div>
                   {d.image ? (
                     <div className="relative h-40 sm:h-auto sm:w-56 sm:shrink-0">
@@ -238,6 +248,13 @@ export default async function KashmirTripPage() {
             ))}
           </ol>
         </section>
+
+        {/* ─── From the road (only when there is general media) ─── */}
+        {media.general.length ? (
+          <Reveal>
+            <GeneralMediaGallery items={media.general} />
+          </Reveal>
+        ) : null}
 
         {/* ─── Cost + lessons ─── */}
         <Reveal>

@@ -9,6 +9,7 @@ import {
 } from '@/lib/data/destinations'
 import { destinationImage } from '@/lib/data/destination-images'
 import { type CurrentWeather } from '@/lib/queries/weather'
+import { applyOverride, overrideImageUrl, type OverrideMap } from '@/lib/queries/destination-overrides'
 import { WeatherChip } from '@/components/destinations/weather-chip'
 
 interface WifiInfo { avg: number | null; count: number }
@@ -32,9 +33,12 @@ const CATEGORY_TAG: Record<DestinationCategory, string> = {
 export function DestinationsBrowser({
   wifiBySlug,
   weatherBySlug = {},
+  overrides = {},
 }: {
   wifiBySlug: Record<string, WifiInfo>
   weatherBySlug?: Record<string, CurrentWeather>
+  /** Owner edits from /admin, merged over the static catalogue per card. */
+  overrides?: OverrideMap
 }) {
   const [query, setQuery] = useState('')
   const [stateFilter, setStateFilter] = useState<string>('all')
@@ -107,15 +111,19 @@ export function DestinationsBrowser({
               <span className="text-xs text-[var(--ink-soft)]">{items.length} places</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((d, idx) => {
+              {items.map((base, idx) => {
+                // Static catalogue entry first, then the owner's override on
+                // top of it. No override = the exact same card as before.
+                const override = overrides[base.slug]
+                const d = applyOverride(base, override)
                 const wifi = wifiBySlug[d.slug]
-                const img = destinationImage(d.slug)
+                const imgSrc = overrideImageUrl(override) ?? destinationImage(d.slug)?.thumbUrl ?? null
                 return (
                   <Link key={d.slug} href={`/destinations/${d.slug}`} className="card card-hover group overflow-hidden">
                     <div className={`relative h-32 overflow-hidden bg-gradient-to-br ${elevationTone(d.elevationM)}`}>
-                      {img ? (
+                      {imgSrc ? (
                         <Image
-                          src={img.thumbUrl}
+                          src={imgSrc}
                           alt={d.name}
                           fill
                           priority={gi === 0 && idx < 3}
