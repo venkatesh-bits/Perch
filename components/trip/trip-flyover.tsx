@@ -8,27 +8,28 @@ import { ROUTE_LINE, TRIP_STOPS, TRIP_META } from '@/lib/data/kashmir-trip'
 
 const RIDE_SECONDS = 34
 
-// Side-view Himalayan 450 with a rider up top, drawn in white with a dark
-// outline so it reads over both the pale plains and the dark relief.
+// The Himalayan 450 seen from ABOVE, rider up top - a map is a bird's-eye view,
+// so a side-profile bike would read wrong. Nose points north (0deg) by default,
+// which lets us rotate it straight to the compass heading. White body with a
+// dark outline so it stays legible over pale plains and dark relief alike.
 const BIKE_SVG = `
-<svg viewBox="0 0 64 40" width="52" height="33" aria-hidden="true"
-     style="overflow:visible;filter:drop-shadow(0 1px 2px rgba(26,23,20,.85))">
-  <g fill="none" stroke="#1A1714" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="13" cy="30" r="7.5"/><circle cx="51" cy="30" r="7.5"/>
-    <path d="M13 30 L25 21 L39 21 L51 30 M25 21 L31 30 L44 30"/>
-    <path d="M40 13 L47 19"/>
-    <path d="M33 12 L31 21 M32 14 L41 15 M31 21 L30 27 L36 29"/>
+<svg viewBox="0 0 40 60" width="30" height="45" aria-hidden="true"
+     style="overflow:visible;filter:drop-shadow(0 2px 3px rgba(26,23,20,.6))">
+  <g stroke="#1A1714" stroke-width="7" fill="#1A1714" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M20 12 V48"/>
+    <path d="M11 18 H29"/>
+    <rect x="16.5" y="4" width="7" height="12" rx="3.5"/>
+    <rect x="16.5" y="44" width="7" height="13" rx="3.5"/>
+    <rect x="14" y="20" width="12" height="26" rx="5"/>
   </g>
-  <g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="13" cy="30" r="7.5"/><circle cx="51" cy="30" r="7.5"/>
-    <path d="M13 30 L25 21 L39 21 L51 30 M25 21 L31 30 L44 30"/>
-    <path d="M40 13 L47 19"/>
-  </g>
-  <path d="M26 19 L39 19 L41 24 L28 24 Z" fill="#FFFFFF" stroke="#1A1714" stroke-width="1.5"/>
-  <g stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none">
-    <path d="M33 12 L31 21 M32 14 L41 15 M31 21 L30 27 L36 29"/>
-  </g>
-  <circle cx="33" cy="7" r="4.6" fill="#FFFFFF" stroke="#1A1714" stroke-width="1.6"/>
+  <rect x="16.5" y="4" width="7" height="12" rx="3.5" fill="#2A2723" stroke="#FFFFFF" stroke-width="1.8"/>
+  <rect x="16.5" y="44" width="7" height="13" rx="3.5" fill="#2A2723" stroke="#FFFFFF" stroke-width="1.8"/>
+  <path d="M11 18 H29" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="10.5" cy="18" r="2" fill="#FFFFFF"/><circle cx="29.5" cy="18" r="2" fill="#FFFFFF"/>
+  <rect x="14" y="20" width="12" height="26" rx="5" fill="#FFFFFF" stroke="#1A1714" stroke-width="1.4"/>
+  <path d="M13.5 22 L20 27 L26.5 22" fill="none" stroke="#1C5240" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="20" cy="31" r="6" fill="#1C5240" stroke="#FFFFFF" stroke-width="2"/>
+  <path d="M16.5 29.5 A 6 6 0 0 1 23.5 29.5 Z" fill="#7FB89C"/>
 </svg>`
 
 function dayMarker(day: number): HTMLDivElement {
@@ -200,8 +201,8 @@ export function TripFlyover() {
       const p = Math.min((now - t0) / (RIDE_SECONDS * 1000), 1)
       const { pos, bearingDeg } = atDistance(p * TOTAL)
       bike.setLngLat(pos)
-      // The SVG points east, so subtract 90 to align it with the compass heading.
-      if (rotorRef.current) rotorRef.current.style.transform = `rotate(${bearingDeg - 90}deg)`
+      // The top-down bike already points north, so the compass heading maps straight through.
+      if (rotorRef.current) rotorRef.current.style.transform = `rotate(${bearingDeg}deg)`
       setTrail(p * TOTAL)
       setPct(Math.round(p * 100))
       map.setCenter(pos)
