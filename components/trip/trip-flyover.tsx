@@ -4,7 +4,32 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { OPENFREEMAP_STYLE } from '@/lib/data/places'
-import { ROUTE_LINE, TRIP_STOPS } from '@/lib/data/kashmir-trip'
+import { ROUTE_LINE, TRIP_STOPS, TRIP_META } from '@/lib/data/kashmir-trip'
+
+const RIDE_SECONDS = 34
+
+// Side-view Himalayan 450 with a rider up top, drawn in white with a dark
+// outline so it reads over both the pale plains and the dark relief.
+const BIKE_SVG = `
+<svg viewBox="0 0 64 40" width="52" height="33" aria-hidden="true"
+     style="overflow:visible;filter:drop-shadow(0 1px 2px rgba(26,23,20,.85))">
+  <g fill="none" stroke="#1A1714" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="13" cy="30" r="7.5"/><circle cx="51" cy="30" r="7.5"/>
+    <path d="M13 30 L25 21 L39 21 L51 30 M25 21 L31 30 L44 30"/>
+    <path d="M40 13 L47 19"/>
+    <path d="M33 12 L31 21 M32 14 L41 15 M31 21 L30 27 L36 29"/>
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="13" cy="30" r="7.5"/><circle cx="51" cy="30" r="7.5"/>
+    <path d="M13 30 L25 21 L39 21 L51 30 M25 21 L31 30 L44 30"/>
+    <path d="M40 13 L47 19"/>
+  </g>
+  <path d="M26 19 L39 19 L41 24 L28 24 Z" fill="#FFFFFF" stroke="#1A1714" stroke-width="1.5"/>
+  <g stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" fill="none">
+    <path d="M33 12 L31 21 M32 14 L41 15 M31 21 L30 27 L36 29"/>
+  </g>
+  <circle cx="33" cy="7" r="4.6" fill="#FFFFFF" stroke="#1A1714" stroke-width="1.6"/>
+</svg>`
 
 function dayMarker(day: number): HTMLDivElement {
   const el = document.createElement('div')
@@ -16,17 +41,50 @@ function dayMarker(day: number): HTMLDivElement {
   return el
 }
 
+// ─── Polyline maths (planar is plenty at this scale) ─────────────────────────
+type Pt = [number, number]
+
+const SEG = ROUTE_LINE.slice(1).map((p, i) => {
+  const a = ROUTE_LINE[i]
+  return Math.hypot(p[0] - a[0], p[1] - a[1])
+})
+const CUM = SEG.reduce<number[]>((acc, d) => [...acc, (acc[acc.length - 1] ?? 0) + d], [])
+const TOTAL = CUM[CUM.length - 1]
+
+/** Position + heading at distance `dist` along the route. */
+function atDistance(dist: number): { pos: Pt; bearingDeg: number; leg: number } {
+  const d = Math.max(0, Math.min(dist, TOTAL))
+  let leg = CUM.findIndex((c) => c >= d)
+  if (leg < 0) leg = SEG.length - 1
+  const legStart = leg === 0 ? 0 : CUM[leg - 1]
+  const t = SEG[leg] === 0 ? 0 : (d - legStart) / SEG[leg]
+  const a = ROUTE_LINE[leg]
+  const b = ROUTE_LINE[leg + 1]
+  const pos: Pt = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+  // Compass bearing: 0 = north, 90 = east.
+  const bearingDeg = (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180) / Math.PI
+  return { pos, bearingDeg, leg }
+}
+
+/** Route coordinates from the start up to `dist`, for the growing trail. */
+function trailTo(dist: number): Pt[] {
+  const { pos, leg } = atDistance(dist)
+  return [...ROUTE_LINE.slice(0, leg + 1), pos] as Pt[]
+}
+
 /**
- * The full circuit on one map: numbered day markers, the route line, and a
- * "fly the route" mode that glides the camera stop to stop. Honours
- * prefers-reduced-motion by jumping instead of flying.
+ * The circuit on one map: numbered day markers, the full route, and a white
+ * Himalayan 450 that actually rides the loop - leaning into each turn, trailing
+ * a line behind it, camera in tow. Reduced motion gets the static route.
  */
 export function TripFlyover() {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const flyIdx = useRef(-1)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [flying, setFlying] = useState(false)
+  const bikeRef = useRef<maplibregl.Marker | null>(null)
+  const rotorRef = useRef<HTMLDivElement | null>(null)
+  const rafRef = useRef(0)
+  const [riding, setRiding] = useState(false)
+  const [pct, setPct] = useState(0)
 
   useEffect(() => {
     if (!ref.current) return
@@ -48,86 +106,123 @@ export function TripFlyover() {
         .addTo(map)
     }
 
+    // The bike: maplibre transforms the outer element for positioning, so the
+    // heading rotation lives on an inner wrapper of our own.
+    const bikeEl = document.createElement('div')
+    const rotor = document.createElement('div')
+    rotor.innerHTML = BIKE_SVG
+    rotor.style.cssText = 'transition:transform .15s linear;will-change:transform;'
+    bikeEl.appendChild(rotor)
+    bikeEl.style.opacity = '0'
+    rotorRef.current = rotor
+    bikeRef.current = new maplibregl.Marker({ element: bikeEl })
+      .setLngLat(ROUTE_LINE[0] as Pt)
+      .addTo(map)
+
     map.on('load', () => {
       map.addSource('circuit', {
         type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: { type: 'LineString', coordinates: ROUTE_LINE },
-        },
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: ROUTE_LINE } },
       })
       map.addLayer({
         id: 'circuit-line',
         type: 'line',
         source: 'circuit',
-        paint: { 'line-color': '#1C5240', 'line-width': 2.5, 'line-dasharray': [1.6, 1.4], 'line-opacity': 0.75 },
+        paint: { 'line-color': '#1C5240', 'line-width': 2, 'line-dasharray': [1.6, 1.4], 'line-opacity': 0.45 },
       })
-      const bounds = ROUTE_LINE.reduce(
-        (b, c) => b.extend(c as [number, number]),
-        new maplibregl.LngLatBounds(ROUTE_LINE[0], ROUTE_LINE[0]),
-      )
-      map.fitBounds(bounds, { padding: 46, duration: 0 })
+      // The trail the bike paints as it rides.
+      map.addSource('ridden', {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
+      })
+      map.addLayer({
+        id: 'ridden-line',
+        type: 'line',
+        source: 'ridden',
+        paint: { 'line-color': '#E0A93B', 'line-width': 4, 'line-opacity': 0.95, 'line-blur': 0.4 },
+      })
+      map.fitBounds(bounds(), { padding: 46, duration: 0 })
     })
 
     return () => {
-      if (timer.current) clearTimeout(timer.current)
+      cancelAnimationFrame(rafRef.current)
       map.remove()
       mapRef.current = null
     }
   }, [])
 
-  function stopFlight() {
-    if (timer.current) clearTimeout(timer.current)
-    flyIdx.current = -1
-    setFlying(false)
+  function bounds() {
+    return ROUTE_LINE.reduce(
+      (b, c) => b.extend(c as Pt),
+      new maplibregl.LngLatBounds(ROUTE_LINE[0] as Pt, ROUTE_LINE[0] as Pt),
+    )
+  }
+
+  function setTrail(dist: number) {
+    const src = mapRef.current?.getSource('ridden') as maplibregl.GeoJSONSource | undefined
+    src?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: trailTo(dist) } })
+  }
+
+  function stopRide() {
+    cancelAnimationFrame(rafRef.current)
+    setRiding(false)
+    setPct(0)
     const map = mapRef.current
     if (!map) return
     map.stop()
-    const bounds = ROUTE_LINE.reduce(
-      (b, c) => b.extend(c as [number, number]),
-      new maplibregl.LngLatBounds(ROUTE_LINE[0], ROUTE_LINE[0]),
-    )
-    map.fitBounds(bounds, { padding: 46, duration: 800 })
+    const bikeEl = bikeRef.current?.getElement()
+    if (bikeEl) bikeEl.style.opacity = '0'
+    setTrail(0)
+    map.easeTo({ center: bounds().getCenter(), duration: 600 })
+    map.fitBounds(bounds(), { padding: 46, duration: 700 })
   }
 
-  function flyNext() {
+  function startRide() {
     const map = mapRef.current
-    if (!map) return
-    flyIdx.current += 1
-    if (flyIdx.current >= TRIP_STOPS.length) {
-      stopFlight()
-      return
-    }
-    const s = TRIP_STOPS[flyIdx.current]
+    const bike = bikeRef.current
+    if (!map || !bike || riding) { if (riding) stopRide(); return }
+
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduced) {
-      map.jumpTo({ center: [s.lng, s.lat], zoom: 9 })
-    } else {
-      map.flyTo({ center: [s.lng, s.lat], zoom: 9.2, speed: 0.75, curve: 1.4, essential: false })
+      // No ride - just show the finished trail and the bike at the end.
+      setTrail(TOTAL)
+      bike.setLngLat(ROUTE_LINE[ROUTE_LINE.length - 1] as Pt).getElement().style.opacity = '1'
+      setPct(100)
+      return
     }
-    timer.current = setTimeout(flyNext, reduced ? 1300 : 3400)
-  }
 
-  function startFlight() {
-    if (flying) { stopFlight(); return }
-    flyIdx.current = -1
-    setFlying(true)
-    flyNext()
-  }
+    setRiding(true)
+    bike.getElement().style.opacity = '1'
+    const t0 = performance.now()
+    map.easeTo({ center: ROUTE_LINE[0] as Pt, zoom: 7.6, duration: 900 })
 
-  const label = flying
-    ? `Day ${Math.max(1, Math.min(flyIdx.current + 1, TRIP_STOPS.length))} of ${TRIP_STOPS.length} · tap to stop`
-    : '▶ Fly the route'
+    const step = (now: number) => {
+      const p = Math.min((now - t0) / (RIDE_SECONDS * 1000), 1)
+      const { pos, bearingDeg } = atDistance(p * TOTAL)
+      bike.setLngLat(pos)
+      // The SVG points east, so subtract 90 to align it with the compass heading.
+      if (rotorRef.current) rotorRef.current.style.transform = `rotate(${bearingDeg - 90}deg)`
+      setTrail(p * TOTAL)
+      setPct(Math.round(p * 100))
+      map.setCenter(pos)
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(step)
+      } else {
+        setRiding(false)
+        map.fitBounds(bounds(), { padding: 46, duration: 1200 })
+      }
+    }
+    rafRef.current = requestAnimationFrame(step)
+  }
 
   return (
     <div className="relative h-full w-full">
       <div ref={ref} className="h-full w-full" />
       <button
-        onClick={startFlight}
+        onClick={startRide}
         className="absolute bottom-3 left-3 z-10 rounded-xl bg-[var(--brand)] px-3.5 py-2 text-xs font-semibold text-[var(--paper)] shadow-[var(--elev-md)] transition hover:bg-[var(--brand-deep)]"
       >
-        {label}
+        {riding ? `Riding · ${pct}% · tap to stop` : `▶ Ride the route · ${TRIP_META.distanceKm.toLocaleString()} km`}
       </button>
     </div>
   )
