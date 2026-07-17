@@ -8,6 +8,7 @@ const ADMIN_NAV = [
   { href: '/admin/trip-media', label: 'Trip media' },
   { href: '/admin/posts', label: 'Posts' },
   { href: '/admin/destinations', label: 'Destinations' },
+  { href: '/admin/settings', label: 'Settings' },
 ]
 
 /**

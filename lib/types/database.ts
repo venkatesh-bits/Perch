@@ -187,3 +187,51 @@ export interface DestinationOverride {
   remote_work_note: string | null
   updated_at: string
 }
+
+// ─── Site settings (migration 005) ───────────────────────────────────────────
+
+/**
+ * The single `site_settings` row: the owner's overrides for identity, type,
+ * theme and front-page copy.
+ *
+ * Every field is nullable and null means "use the default in
+ * lib/data/site-defaults.ts". `id` is always true - the table is pinned to one
+ * row by a check constraint.
+ */
+export interface SiteSettings {
+  id: boolean
+
+  site_title: string | null
+  tagline: string | null
+  meta_description: string | null
+
+  /** Curated keys from lib/data/fonts.ts, never family names or URLs. */
+  font_display: string | null
+  font_body: string | null
+
+  color_brand: string | null
+  color_brand_deep: string | null
+  color_brand_mint: string | null
+  color_brand_gold: string | null
+  color_paper: string | null
+  color_ink: string | null
+  color_ink_soft: string | null
+  color_line: string | null
+  color_surface: string | null
+  color_clay: string | null
+
+  hero_badge: string | null
+  hero_title: string | null
+  hero_title_accent: string | null
+  hero_subhead: string | null
+  featured_heading: string | null
+  featured_eyebrow: string | null
+  ev_heading: string | null
+  ev_body: string | null
+  cta_heading: string | null
+  cta_body: string | null
+  footer_blurb: string | null
+  about_blurb: string | null
+
+  updated_at: string | null
+}

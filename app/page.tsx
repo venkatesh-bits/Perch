@@ -7,6 +7,8 @@ import { DESTINATIONS, getDestination } from '@/lib/data/destinations'
 import { destinationImage } from '@/lib/data/destination-images'
 import { getWifiBySlug } from '@/lib/queries/home'
 import { getWeatherBatch } from '@/lib/queries/weather'
+import { getSiteSettings } from '@/lib/queries/site-settings'
+import { heroBadgeDefault, SITE_DEFAULTS } from '@/lib/data/site-defaults'
 import { WeatherChip } from '@/components/destinations/weather-chip'
 import { Tilt } from '@/components/fx/tilt'
 import { Reveal } from '@/components/fx/reveal'
@@ -43,9 +45,12 @@ export default async function HomePage() {
 
   // Catalogue is the source of truth; the DB adds optional WiFi data (by slug) and
   // Open-Meteo adds live weather for the featured cards in one batched request.
-  const [wifiBySlug, weatherBySlug] = await Promise.all([
+  // Settings are the owner's copy overrides - every one falls back to the exact
+  // string this page shipped with, so an empty settings row changes nothing.
+  const [wifiBySlug, weatherBySlug, settings] = await Promise.all([
     getWifiBySlug(),
     getWeatherBatch(featuredList.map((d) => ({ slug: d.slug, lat: d.lat, lng: d.lng }))),
+    getSiteSettings(),
   ])
 
   return (
@@ -67,18 +72,18 @@ export default async function HomePage() {
         <div className="relative z-10 mx-auto max-w-6xl px-5 py-24 sm:py-32">
           <div className="rise inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-[var(--brand-mint)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-mint)]" />
-            {destCount ?? '28'} hill stations, checked by people who actually went
+            {settings.hero_badge?.trim() || heroBadgeDefault(destCount)}
           </div>
 
           <h1 className="rise delay-1 mt-6 max-w-3xl font-display text-6xl leading-[1.0] tracking-tight text-white sm:text-8xl">
-            Work from anywhere.<br />
-            <span className="italic text-grad glow-text">Worry about nothing.</span>
+            {settings.hero_title?.trim() || SITE_DEFAULTS.heroTitle}<br />
+            <span className="italic text-grad glow-text">
+              {settings.hero_title_accent?.trim() || SITE_DEFAULTS.heroTitleAccent}
+            </span>
           </h1>
 
           <p className="rise delay-2 mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-            Will the WiFi hold for a call? Is the ghat road washed out? Where do you charge an EV
-            past Manali? We track the things that decide whether a hill town works for a few weeks,
-            from the Western Ghats up to Ladakh.
+            {settings.hero_subhead?.trim() || SITE_DEFAULTS.heroSubhead}
           </p>
 
           <div className="rise delay-3 mt-9 max-w-3xl">
@@ -104,9 +109,11 @@ export default async function HomePage() {
         <section className="space-y-7">
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">Where to perch</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">
+                {settings.featured_eyebrow?.trim() || SITE_DEFAULTS.featuredEyebrow}
+              </p>
               <h2 className="mt-1.5 font-display text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
-                Towns people keep going back to
+                {settings.featured_heading?.trim() || SITE_DEFAULTS.featuredHeading}
               </h2>
             </div>
             <Link href="/destinations" className="hidden text-sm font-medium text-[var(--brand)] hover:text-[var(--brand-deep)] sm:block">
@@ -184,12 +191,17 @@ export default async function HomePage() {
             <div className="space-y-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand-gold)]">New</p>
               <h2 className="font-display text-3xl tracking-tight text-white sm:text-4xl">
-                Driving electric? <span className="italic text-[var(--brand-mint)]">We point you to the live maps.</span>
+                {/* Unset renders the original two-piece heading, italic mint answer and
+                    all. A set value is one plain run of text - the honest reading of a
+                    single text field. */}
+                {settings.ev_heading?.trim() || (
+                  <>
+                    Driving electric? <span className="italic text-[var(--brand-mint)]">We point you to the live maps.</span>
+                  </>
+                )}
               </h2>
               <p className="max-w-md text-white/65">
-                A hand-drawn charger map goes stale in a week, so we don’t keep one. We send you to the
-                maps the operators keep current themselves - PlugShare and the government e-AMRIT map for
-                everything at once, plus each network from Tata Power and Ather to ChargeMOD.
+                {settings.ev_body?.trim() || SITE_DEFAULTS.evBody}
               </p>
               <Link href="/charging" className="mt-2 inline-flex items-center gap-1.5 rounded-[0.85rem] bg-[var(--brand-gold)] px-5 py-2.5 text-sm font-semibold text-[var(--space)] shadow-[0_10px_26px_-8px_rgb(224_169_59/0.55)] transition hover:-translate-y-0.5 hover:brightness-105">
                 See the charging maps →
@@ -244,10 +256,11 @@ export default async function HomePage() {
           </svg>
           <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-white">
-              <h2 className="font-display text-3xl tracking-tight sm:text-4xl">Just back from the hills?</h2>
+              <h2 className="font-display text-3xl tracking-tight sm:text-4xl">
+                {settings.cta_heading?.trim() || SITE_DEFAULTS.ctaHeading}
+              </h2>
               <p className="mt-2 max-w-md text-white/75">
-                Run a speed test, jot down how the road was. Three minutes from you saves the next
-                person a ruined work week.
+                {settings.cta_body?.trim() || SITE_DEFAULTS.ctaBody}
               </p>
             </div>
             <Link href="/contribute" className="btn-ghost shrink-0 text-base">

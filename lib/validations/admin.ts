@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { BODY_FONTS, DISPLAY_FONTS } from '@/lib/data/fonts'
+import { THEME_COLORS } from '@/lib/data/site-defaults'
 
 // ─── Image uploads ───────────────────────────────────────────────────────────
 
@@ -131,3 +133,99 @@ export const destinationOverrideSchema = z.object({
   summary: z.string().max(2_000).optional(),
   remote_work_note: z.string().max(2_000).optional(),
 })
+
+// ─── Site settings (migration 005) ───────────────────────────────────────────
+
+/**
+ * Every field below is "blank means null means use the default", so the reset
+ * path and the never-set path are the same path. There is no way to store an
+ * empty string and no need for the app to tell the two apart.
+ *
+ * Text is CLAMPED (trimmed and truncated) rather than rejected - a long blurb is
+ * a mistake, not an attack, and silently keeping the first N characters beats
+ * throwing the owner's paragraph back at them. Colours and font keys are
+ * REJECTED instead: those two end up in a <style> tag, so "close enough" is not
+ * a thing they get to be.
+ */
+const clamped = (max: number) =>
+  z
+    .string()
+    .transform((v) => v.trim().slice(0, max))
+    .transform((v) => (v === '' ? null : v))
+
+/** Exactly #rrggbb, or blank. Same gate as lib/data/site-defaults.ts. */
+const hexColor = z
+  .string()
+  .transform((v) => v.trim())
+  .refine((v) => v === '' || /^#[0-9a-fA-F]{6}$/.test(v), {
+    message: 'Colours must be a 6-digit hex code, like #1C5240.',
+  })
+  .transform((v) => (v === '' ? null : v.toUpperCase()))
+
+/** A key from the curated list in lib/data/fonts.ts, or blank. */
+const fontKey = (allowed: readonly string[]) =>
+  z
+    .string()
+    .transform((v) => v.trim())
+    .refine((v) => v === '' || allowed.includes(v), {
+      message: 'Pick a font from the list.',
+    })
+    .transform((v) => (v === '' ? null : v))
+
+export const identitySettingsSchema = z.object({
+  site_title: clamped(80),
+  tagline: clamped(160),
+  meta_description: clamped(320),
+})
+
+export const typographySettingsSchema = z.object({
+  font_display: fontKey(DISPLAY_FONTS.map((f) => f.key)),
+  font_body: fontKey(BODY_FONTS.map((f) => f.key)),
+})
+
+export const themeSettingsSchema = z.object(
+  Object.fromEntries(THEME_COLORS.map((c) => [c.column, hexColor])) as Record<
+    (typeof THEME_COLORS)[number]['column'],
+    typeof hexColor
+  >,
+)
+
+export const copySettingsSchema = z.object({
+  hero_badge: clamped(160),
+  hero_title: clamped(120),
+  hero_title_accent: clamped(120),
+  hero_subhead: clamped(600),
+  featured_eyebrow: clamped(60),
+  featured_heading: clamped(160),
+  ev_heading: clamped(200),
+  ev_body: clamped(800),
+  cta_heading: clamped(160),
+  cta_body: clamped(600),
+  footer_blurb: clamped(600),
+  about_blurb: clamped(600),
+})
+
+export const SETTINGS_SECTIONS = ['identity', 'typography', 'theme', 'copy'] as const
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
+
+/**
+ * Which columns each section owns. A save only ever touches its own section's
+ * columns, so two tabs open on different sections cannot clobber each other.
+ */
+export const SECTION_COLUMNS: Record<SettingsSection, readonly string[]> = {
+  identity: Object.keys(identitySettingsSchema.shape),
+  typography: Object.keys(typographySettingsSchema.shape),
+  theme: THEME_COLORS.map((c) => c.column),
+  copy: Object.keys(copySettingsSchema.shape),
+}
+
+/**
+ * Allowlist for the per-field reset action. The column name goes into an UPDATE,
+ * so it is checked against this rather than trusted - the same reflex as the
+ * font keys, for the same reason.
+ */
+export const RESETTABLE_COLUMNS: readonly string[] = Object.values(SECTION_COLUMNS).flat()
+
+export function isSettingsSection(v: string): v is SettingsSection {
+  return (SETTINGS_SECTIONS as readonly string[]).includes(v)
+}

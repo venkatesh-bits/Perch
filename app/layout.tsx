@@ -1,51 +1,158 @@
 import type { Metadata } from 'next'
-import { Geist, Instrument_Serif } from 'next/font/google'
+import {
+  Bricolage_Grotesque,
+  DM_Serif_Display,
+  Fraunces,
+  Geist,
+  IBM_Plex_Sans,
+  Instrument_Serif,
+  Inter,
+  Playfair_Display,
+  Source_Sans_3,
+  Space_Grotesk,
+} from 'next/font/google'
 import Link from 'next/link'
 import { PerchMark } from '@/components/brand/logo'
 import { SpatialBackground } from '@/components/fx/spatial-background'
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
+import { buildRootCss, SITE_DEFAULTS } from '@/lib/data/site-defaults'
+import { getSiteSettings } from '@/lib/queries/site-settings'
+import { SITE_URL } from '@/lib/site'
 import './globals.css'
 
-const geist = Geist({
-  subsets: ['latin'],
-  variable: '--font-sans',
-})
-
-const instrument = Instrument_Serif({
+/**
+ * The curated type set, self-hosted at build time.
+ *
+ * All ten are loaded on every page and each gets its own CSS variable; only the
+ * `--font-display` / `--font-sans` binding changes when the owner picks a
+ * different one (see lib/data/fonts.ts, which is the allowlist, and
+ * app/globals.css, which holds the default binding).
+ *
+ * It has to work this way round. next/font compiles the @font-face and the
+ * subset files at build time, so the set cannot be decided by a database value
+ * at request time. The alternative - a runtime <link> to Google Fonts - would
+ * mean FOUT, a third-party request on every page load, and a CSP hole. Loading
+ * all ten and switching a variable costs a few font files; it buys keeping the
+ * pages static and the CSP shut.
+ *
+ * KEEP THIS LIST TIGHT. Every family here is served to every visitor whether or
+ * not it is the chosen one.
+ */
+const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
   weight: '400',
   style: ['normal', 'italic'],
-  variable: '--font-display',
+  display: 'swap',
+  variable: '--font-instrument-serif',
+})
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair-display',
+})
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-fraunces',
+})
+const dmSerifDisplay = DM_Serif_Display({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-dm-serif-display',
+})
+const bricolageGrotesque = Bricolage_Grotesque({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-bricolage-grotesque',
+})
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+})
+const geist = Geist({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-geist',
+})
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
+const sourceSans3 = Source_Sans_3({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-source-sans-3',
+})
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-ibm-plex-sans',
 })
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: 'Perch - Work from anywhere. Worry about nothing.',
-    template: '%s | Perch',
-  },
-  description: SITE_DESCRIPTION,
-  applicationName: SITE_NAME,
-  keywords: [
-    'remote work India', 'hill stations', 'workation', 'digital nomad India',
-    'WiFi hill stations', 'Himalaya travel', 'Kashmir', 'Ladakh', 'Manali', 'Leh',
-    'Ooty', 'Munnar', 'Coorg', 'road trip', 'travel advisory', 'highest motorable pass',
-  ],
-  alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    siteName: SITE_NAME,
-    title: 'Perch - Work from anywhere. Worry about nothing.',
-    description: SITE_DESCRIPTION,
-    url: SITE_URL,
-    locale: 'en_IN',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Perch - Work from anywhere. Worry about nothing.',
-    description: SITE_DESCRIPTION,
-  },
-  robots: { index: true, follow: true },
+/** Every family's variable has to exist on <html> - only the binding changes. */
+const FONT_VARS = [
+  instrumentSerif.variable,
+  playfairDisplay.variable,
+  fraunces.variable,
+  dmSerifDisplay.variable,
+  bricolageGrotesque.variable,
+  spaceGrotesk.variable,
+  geist.variable,
+  inter.variable,
+  sourceSans3.variable,
+  ibmPlexSans.variable,
+].join(' ')
+
+/**
+ * Title and description come from the settings row when set, and from
+ * lib/site.ts otherwise - it stays the fallback source of truth.
+ *
+ * This is a generateMetadata() rather than a static export because it reads the
+ * settings. It does NOT make anything dynamic: getSiteSettings is cached, so
+ * there is no request-time data here and every prerendered page stays
+ * prerendered.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings()
+
+  const title = settings.site_title?.trim() || SITE_DEFAULTS.siteTitle
+  const tagline = settings.tagline?.trim() || SITE_DEFAULTS.tagline
+  const description = settings.meta_description?.trim() || SITE_DEFAULTS.metaDescription
+  const headline = `${title} - ${tagline}`
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: headline,
+      template: `%s | ${title}`,
+    },
+    description,
+    applicationName: title,
+    keywords: [
+      'remote work India', 'hill stations', 'workation', 'digital nomad India',
+      'WiFi hill stations', 'Himalaya travel', 'Kashmir', 'Ladakh', 'Manali', 'Leh',
+      'Ooty', 'Munnar', 'Coorg', 'road trip', 'travel advisory', 'highest motorable pass',
+    ],
+    alternates: { canonical: '/' },
+    openGraph: {
+      type: 'website',
+      siteName: title,
+      title: headline,
+      description,
+      url: SITE_URL,
+      locale: 'en_IN',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: headline,
+      description,
+    },
+    robots: { index: true, follow: true },
+  }
 }
 
 const NAV = [
@@ -55,10 +162,31 @@ const NAV = [
   { href: '/charging',     label: 'EV Charging' },
 ]
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getSiteSettings()
+
+  // Null whenever nothing is set or nothing validates, and then no <style> is
+  // rendered at all - the page is byte-for-byte what it was before this feature.
+  const rootCss = buildRootCss(settings)
+
   return (
-    <html lang="en" className={`${geist.variable} ${instrument.variable}`}>
+    <html lang="en" className={FONT_VARS}>
       <body className="min-h-screen antialiased">
+          {/*
+            Overrides for the tokens the owner has actually set. Safe to inline:
+            buildRootCss() emits only #rrggbb values it re-validated itself and
+            var() references to the curated font allowlist, so no owner-supplied
+            string reaches this tag. `href`+`precedence` let React hoist and
+            dedupe it into <head>, ahead of first paint.
+          */}
+          {rootCss ? (
+            <style
+              href="perch-site-settings"
+              precedence="high"
+              dangerouslySetInnerHTML={{ __html: rootCss }}
+            />
+          ) : null}
+
           <SpatialBackground />
           <header className="sticky top-0 z-50 border-b border-[var(--line)]/80 bg-[var(--paper)]/75 shadow-[0_1px_0_rgb(30_24_18/0.03),0_8px_24px_-16px_rgb(30_24_18/0.18)] backdrop-blur-xl backdrop-saturate-150">
             <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
@@ -97,8 +225,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <span className="font-display text-2xl font-semibold text-[var(--brand)]">perch</span>
                   </Link>
                   <p className="mt-3 max-w-xs text-sm leading-relaxed text-[var(--ink-soft)]">
-                    Work from anywhere. Worry about nothing. The practical stuff remote workers and
-                    road trippers need before heading into the Indian hills, Western Ghats to the Himalaya.
+                    {settings.footer_blurb?.trim() || SITE_DEFAULTS.footerBlurb}
                   </p>
                 </div>
                 <div className="space-y-2.5">
@@ -115,8 +242,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="space-y-2.5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">About</p>
                   <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
-                    Built by travellers, for travellers. We do not take a cut from any stay or
-                    transport booking, so the notes here owe nothing to anyone but the people who wrote them.
+                    {settings.about_blurb?.trim() || SITE_DEFAULTS.aboutBlurb}
                   </p>
                 </div>
               </div>

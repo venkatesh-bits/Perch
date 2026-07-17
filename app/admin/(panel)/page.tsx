@@ -21,6 +21,11 @@ const CARDS = [
     title: 'Destinations',
     blurb: 'Override the summary, work note or photo on any of the static catalogue entries.',
   },
+  {
+    href: '/admin/settings',
+    title: 'Site settings',
+    blurb: 'The name, the type, the ten palette colours and the front-page words. Blank means default.',
+  },
 ]
 
 export default async function AdminDashboard() {
@@ -54,7 +59,7 @@ export default async function AdminDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {CARDS.map((c) => (
           <Link key={c.href} href={c.href} className="card card-hover block p-5">
             <h2 className="font-display text-xl tracking-tight text-[var(--ink)]">{c.title}</h2>

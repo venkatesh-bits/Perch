@@ -41,6 +41,15 @@
 
   --motion-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --motion-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+
+  /* ─── Type bindings ─────────────────────────────────────────────────────────
+     next/font self-hosts every curated family at build time and gives each one
+     its own variable (--font-instrument-serif, --font-geist, ...) on <html>;
+     see app/layout.tsx and lib/data/fonts.ts. These two lines are the only
+     place a family is actually chosen, and they are the site's defaults.
+     /admin/settings overrides exactly these two, and nothing else. */
+  --font-display: var(--font-instrument-serif);
+  --font-sans:    var(--font-geist);
 }
 
 /* Expose tokens to Tailwind v4 utilities (bg-brand, text-ink, etc.) */
