@@ -153,21 +153,25 @@ create policy "media_admin_delete" on storage.objects
   for delete using (bucket_id = 'media' and public.is_admin());
 
 -- ─── BOOTSTRAP ───────────────────────────────────────────────────────────────
--- RUN THIS LINE **AFTER** creating your Auth user.
+-- Promoting the owner to admin is a deliberate MANUAL step, and the address is
+-- intentionally NOT hardcoded here: this repository is public, and an owner's
+-- email address does not belong in it.
 --
 --   1. Supabase dashboard -> Authentication -> Users -> "Add user"
---      -> Create new user, email REPLACE_WITH_YOUR_AUTH_EMAIL, set a password,
---         and tick "Auto Confirm User".
---   2. Come back here and run the insert below. It promotes that user to admin.
---      Until it runs, NOBODY is an admin and every write above is refused -
---      which is the correct default.
+--      -> Create new user, set a password, tick "Auto Confirm User".
+--   2. Run the insert below in the SQL editor with that address substituted in.
+--      Until it runs NOBODY is an admin and every write above is refused, which
+--      is the correct default: the schema ships locked.
 --   3. Sign in at /admin/login.
 --
--- It is safe to re-run.
-
-insert into public.admins (user_id, email)
-select id, email from auth.users where email = 'REPLACE_WITH_YOUR_AUTH_EMAIL'
-on conflict do nothing;
-
--- Sanity check - should return one row after the bootstrap:
+-- Safe to re-run (on conflict do nothing).
+--
+--   insert into public.admins (user_id, email)
+--   select id, email from auth.users where email = 'REPLACE_WITH_YOUR_AUTH_EMAIL'
+--   on conflict do nothing;
+--
+-- Sanity check - should return exactly one row afterwards:
 --   select a.email, a.created_at from public.admins a;
+--
+-- If sign-in says "not an admin", the address above did not match a row in
+-- auth.users. Check it with:  select email from auth.users;
