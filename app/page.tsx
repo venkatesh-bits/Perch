@@ -1,23 +1,48 @@
 import type { Metadata } from 'next'
+import { IBM_Plex_Mono, Newsreader, Schibsted_Grotesk } from 'next/font/google'
 import Link from 'next/link'
 import Image from 'next/image'
-import { SearchBar } from '@/components/search/search-bar'
-import { EV_NETWORKS, EV_LIVE_MAPS } from '@/lib/data/ev-networks'
+import { AltimeterDial } from '@/components/home/altimeter-dial'
+import { TelemetryTicker } from '@/components/home/telemetry-ticker'
+import { EV_NETWORKS } from '@/lib/data/ev-networks'
 import { DESTINATIONS, getDestination } from '@/lib/data/destinations'
 import { destinationImage } from '@/lib/data/destination-images'
+import { TRIP_META } from '@/lib/data/kashmir-trip'
+import { STAY_TOTALS } from '@/lib/data/stays-all'
+import { WILDLIFE } from '@/lib/data/wildlife'
 import { getWifiBySlug } from '@/lib/queries/home'
-import { getWeatherBatch } from '@/lib/queries/weather'
 import { getSiteSettings } from '@/lib/queries/site-settings'
 import { heroBadgeDefault, SITE_DEFAULTS } from '@/lib/data/site-defaults'
-import { WeatherChip } from '@/components/destinations/weather-chip'
-import { Tilt } from '@/components/fx/tilt'
-import { Reveal } from '@/components/fx/reveal'
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
 }
+
+/**
+ * Page-scoped type, not part of the curated sitewide allowlist in
+ * lib/data/fonts.ts - that set ships on every route and backs the admin
+ * settings font picker. This look is a one-off for the homepage only, so it
+ * loads its own three families and applies them just to this page's wrapper.
+ */
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-newsreader',
+})
+const schibstedGrotesk = Schibsted_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-schibsted-grotesk',
+})
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  display: 'swap',
+  variable: '--font-ibm-plex-mono',
+})
 
 // Top 12 most-visited hill destinations across India (tourist footfall),
 // spanning the Himalaya and the South.
@@ -26,249 +51,387 @@ const FEATURED_SLUGS = [
   'gulmarg', 'leh', 'coorg', 'kodaikanal', 'mussoorie', 'dharamshala',
 ]
 
-const MARQUEE = [
-  'Coonoor', 'Munnar', 'Coorg', 'Kodaikanal', 'Gulmarg', 'Manali',
-  'Ooty', 'Leh', 'Spiti', 'Pahalgam', 'Auli', 'Mussoorie',
-  'Valparai', 'Wayanad', 'Sonamarg', 'Chikmagalur', 'Nainital', 'Vagamon',
-]
-
-function elevationTone(e: number): string {
-  if (e > 2000) return 'from-[#23413a] to-[#0f2a22]'
-  if (e > 1500) return 'from-[#1c5240] to-[#143c2f]'
-  if (e > 1000) return 'from-[#2a6049] to-[#1c5240]'
-  return 'from-[#357a5b] to-[#1c5240]'
-}
+// Real WILDLIFE entries for destinations already in the featured set - no
+// invented sighting timestamps, just what lib/data/wildlife.ts actually has.
+const WILDLIFE_LOG_SLUGS = ['srinagar', 'munnar', 'coorg']
 
 export default async function HomePage() {
   const destCount = DESTINATIONS.length
   const featuredList = FEATURED_SLUGS.map((s) => getDestination(s)!).filter(Boolean)
 
-  // Catalogue is the source of truth; the DB adds optional WiFi data (by slug) and
-  // Open-Meteo adds live weather for the featured cards in one batched request.
-  // Settings are the owner's copy overrides - every one falls back to the exact
-  // string this page shipped with, so an empty settings row changes nothing.
-  const [wifiBySlug, weatherBySlug, settings] = await Promise.all([
+  const [wifiBySlug, settings] = await Promise.all([
     getWifiBySlug(),
-    getWeatherBatch(featuredList.map((d) => ({ slug: d.slug, lat: d.lat, lng: d.lng }))),
     getSiteSettings(),
   ])
 
+  const wifiEntries = featuredList
+    .map((d) => {
+      const wifi = wifiBySlug[d.slug]
+      return wifi?.avg_download_mbps != null ? { d, wifi, mbps: wifi.avg_download_mbps } : null
+    })
+    .filter((x): x is { d: (typeof featuredList)[number]; wifi: NonNullable<typeof wifiBySlug[string]>; mbps: number } => x !== null)
+
+  const wifiBadge = wifiEntries[0]
+    ? { mbps: wifiEntries[0].mbps, place: wifiEntries[0].d.name }
+    : null
+
+  const wildlifeLog = WILDLIFE_LOG_SLUGS.map((slug) => {
+    const w = WILDLIFE[slug]
+    const d = getDestination(slug)
+    return w && d ? { animal: w.species[0], where: `${w.park} · ${d.name}` } : null
+  }).filter((x): x is { animal: string; where: string } => x !== null)
+
+  const tickerItems = [
+    ...featuredList.slice(0, 4).map((d) => `ALT ${d.elevationM.toLocaleString()} m · ${d.name}`),
+    ...wifiEntries.slice(0, 2).map(({ d, mbps }) => `WIFI ${mbps} Mbps · ${d.name}`),
+    `EV ${EV_NETWORKS.length} networks mapped`,
+    ...wildlifeLog.slice(0, 2).map((w) => `SIGHTING ${w.animal.toLowerCase()} · ${w.where.split(' · ')[1]}`),
+    `STAYS ${STAY_TOTALS.total.toLocaleString()}+ mapped`,
+  ]
+
+  const connectivityBars = Array.from({ length: 14 }, (_, i) => ({
+    h: `${28 + ((i * 37) % 48)}px`,
+    c: i % 4 === 0 ? '#E0A93B' : '#7FB89C',
+    dur: `${1.6 + (i % 5) * 0.3}s`,
+    delay: `${(i % 7) * 0.18}s`,
+  }))
+
   return (
-    <div>
+    <div
+      className={`${newsreader.variable} ${schibstedGrotesk.variable} ${ibmPlexMono.variable} home-dark`}
+    >
       {/* ─── HERO ───────────────────────────────────────────────────────────── */}
-      <section className="on-dark grain relative overflow-hidden bg-[var(--brand-deep)]">
-        {/* glowing orbs */}
-        <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-[var(--brand-mint)] opacity-20 blur-[120px]" />
-        <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-[var(--brand-gold)] opacity-15 blur-[120px]" />
-
-        {/* layered mountain silhouettes */}
-        <svg viewBox="0 0 1200 240" preserveAspectRatio="none" className="absolute bottom-0 left-0 w-full opacity-[0.12]" aria-hidden="true">
-          <path d="M0,240 L0,150 L200,60 L380,130 L560,40 L760,120 L960,30 L1100,90 L1200,50 L1200,240 Z" fill="white" />
+      <section className="relative overflow-hidden">
+        <svg
+          viewBox="0 0 1200 620"
+          preserveAspectRatio="xMidYMax slice"
+          className="absolute inset-0 h-full w-full"
+          aria-hidden="true"
+        >
+          <g fill="none" stroke="#7FB89C" strokeOpacity="0.09" strokeWidth="1.1">
+            <path d="M-60 500 C180 420 340 540 600 460 S1020 380 1260 470" />
+            <path d="M-60 540 C200 470 360 580 620 505 S1040 430 1260 515" />
+            <path d="M-60 580 C220 520 380 620 640 555 S1060 485 1260 560" />
+            <path d="M-60 460 C160 370 320 500 580 415 S1000 330 1260 425" />
+            <path d="M-60 420 C140 320 300 460 560 370 S980 280 1260 380" />
+          </g>
         </svg>
-        <svg viewBox="0 0 1200 200" preserveAspectRatio="none" className="absolute bottom-0 left-0 w-full opacity-[0.18]" aria-hidden="true">
-          <path d="M0,200 L0,170 L160,110 L340,160 L520,90 L720,150 L900,100 L1080,150 L1200,120 L1200,200 Z" fill="white" />
-        </svg>
 
-        <div className="relative z-10 mx-auto max-w-6xl px-5 py-24 sm:py-32">
-          <div className="rise inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-[var(--brand-mint)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-mint)]" />
-            {settings.hero_badge?.trim() || heroBadgeDefault(destCount)}
-          </div>
-
-          <h1 className="rise delay-1 mt-6 max-w-3xl font-display text-6xl leading-[1.0] tracking-tight text-white sm:text-8xl">
-            {settings.hero_title?.trim() || SITE_DEFAULTS.heroTitle}<br />
-            <span className="italic text-grad glow-text">
-              {settings.hero_title_accent?.trim() || SITE_DEFAULTS.heroTitleAccent}
-            </span>
-          </h1>
-
-          <p className="rise delay-2 mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-            {settings.hero_subhead?.trim() || SITE_DEFAULTS.heroSubhead}
-          </p>
-
-          <div className="rise delay-3 mt-9 max-w-3xl">
-            <SearchBar />
-          </div>
-        </div>
-
-        {/* scrolling destination marquee */}
-        <div className="marquee-mask relative z-10 border-t border-white/10 py-4">
-          <div className="marquee-track gap-8 text-sm font-medium text-white/40">
-            {[...MARQUEE, ...MARQUEE].map((name, i) => (
-              <span key={i} className="flex items-center gap-8">
-                {name}
-                <span className="text-[var(--brand-gold)]/50">✦</span>
+        <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-5 pb-16 pt-[78px] lg:grid-cols-[1.08fr_0.92fr]">
+          <div>
+            <p className="rise mono m-0 inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.16em] text-[#7FB89C]">
+              <span className="pulse-dot h-[5px] w-[5px] rounded-full bg-[#E0A93B]" />
+              ALT {TRIP_META.maxAltM.toLocaleString()} M · {settings.hero_badge?.trim() || heroBadgeDefault(destCount)}
+            </p>
+            <h1 className="rise disp mt-5 text-[clamp(48px,6.8vw,80px)] text-[#F3EFE6]">
+              {settings.hero_title?.trim() || SITE_DEFAULTS.heroTitle}
+              <br />
+              <span className="italic text-[#E0A93B]">
+                {settings.hero_title_accent?.trim() || SITE_DEFAULTS.heroTitleAccent}
               </span>
-            ))}
+            </h1>
+            <p className="rise delay-1 mt-6 max-w-[470px] text-[16.5px] text-[rgba(233,228,218,0.62)]">
+              {settings.hero_subhead?.trim() || SITE_DEFAULTS.heroSubhead}
+            </p>
+            <div className="rise delay-2 mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/destinations"
+                className="rounded-[11px] bg-[#7FB89C] px-[22px] py-[13px] text-[15px] font-semibold text-[#0A1912]"
+              >
+                Explore destinations →
+              </Link>
+              <Link
+                href="/journeys"
+                className="rounded-[11px] border border-white/25 px-[22px] py-[13px] text-[15px] font-semibold text-[#E9E4DA]"
+              >
+                Plan a journey
+              </Link>
+            </div>
+          </div>
+
+          <div className="rise delay-3 flex justify-center">
+            <AltimeterDial altitude={TRIP_META.maxAltM} wifiBadge={wifiBadge} />
           </div>
         </div>
+
+        <TelemetryTicker items={tickerItems} />
       </section>
 
-      <div className="mx-auto max-w-6xl px-5 py-16 space-y-20">
-        {/* ─── FEATURED DESTINATIONS ────────────────────────────────────────── */}
-        <section className="space-y-7">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">
-                {settings.featured_eyebrow?.trim() || SITE_DEFAULTS.featuredEyebrow}
+      <div className="mx-auto max-w-6xl px-5 py-[76px] space-y-[88px]">
+        {/* ─── THE PANEL ────────────────────────────────────────────────────── */}
+        <section>
+          <p className="mono m-0 text-[11px] uppercase tracking-[0.16em] text-[#7FB89C]">
+            What Perch measures
+          </p>
+          <h2 className="disp mb-[26px] mt-2.5 text-[clamp(32px,4.2vw,46px)] text-[#F3EFE6]">
+            The mountain, measured.
+          </h2>
+
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+            {/* Altitude & air */}
+            <div className="rounded-[18px] border border-[rgba(127,184,156,0.16)] bg-[rgba(9,22,17,0.55)] p-[22px]">
+              <div className="flex items-center justify-between">
+                <p className="mono m-0 text-[10.5px] uppercase tracking-[0.14em] text-[rgba(233,228,218,0.45)]">
+                  Altitude &amp; air
+                </p>
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#7FB89C]" />
+              </div>
+              <div className="mt-3.5 flex items-center gap-[18px]">
+                <svg viewBox="0 0 96 96" width="96" height="96" className="shrink-0">
+                  <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(233,228,218,0.1)" strokeWidth="7" />
+                  <circle
+                    cx="48" cy="48" r="40" fill="none" stroke="#7FB89C" strokeWidth="7"
+                    strokeLinecap="round" strokeDasharray="251" strokeDashoffset="88"
+                    transform="rotate(-90 48 48)"
+                  />
+                  <text x="48" y="46" textAnchor="middle" fontSize="16" fontWeight="600" fill="#F3EFE6" className="mono">65%</text>
+                  <text x="48" y="60" textAnchor="middle" fontSize="8" fill="rgba(233,228,218,0.45)" className="mono">O₂ vs sea</text>
+                </svg>
+                <div>
+                  <p className="disp m-0 text-[25px] text-[#F3EFE6]">Thin air is a schedule item.</p>
+                  <p className="mt-1.5 text-[13.5px] text-[rgba(233,228,218,0.55)]">
+                    Every destination carries its altitude, oxygen fraction and acclimatisation days — so 3,500 m is a plan, not a surprise.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Roads & riding */}
+            <div className="rounded-[18px] border border-[rgba(127,184,156,0.16)] bg-[rgba(9,22,17,0.55)] p-[22px]">
+              <div className="flex items-center justify-between">
+                <p className="mono m-0 text-[10.5px] uppercase tracking-[0.14em] text-[rgba(233,228,218,0.45)]">
+                  Roads &amp; riding
+                </p>
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#E0A93B]" />
+              </div>
+              <svg viewBox="0 0 280 96" className="mt-2.5 h-24 w-full">
+                <path d="M8 80 C60 76 70 30 130 40 S220 78 272 24" fill="none" stroke="rgba(233,228,218,0.12)" strokeWidth="6" strokeLinecap="round" />
+                <path
+                  d="M8 80 C60 76 70 30 130 40 S220 78 272 24" fill="none" stroke="#E0A93B" strokeWidth="2"
+                  strokeLinecap="round" strokeDasharray="8 10" className="dash-move"
+                />
+                <circle cx="130" cy="40" r="4" fill="#0A1912" stroke="#E0A93B" strokeWidth="2" />
+                <text x="130" y="26" textAnchor="middle" fontSize="9" className="mono" fill="rgba(233,228,218,0.5)">hairpin 22 of 36</text>
+              </svg>
+              <p className="disp mt-2 text-[25px] text-[#F3EFE6]">Roads, as they actually are.</p>
+              <p className="mt-1.5 text-[13.5px] text-[rgba(233,228,218,0.55)]">
+                Surface, hairpins, checkpoints and seasonal closures — logged from the saddle, not scraped from brochures.
               </p>
-              <h2 className="mt-1.5 font-display text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
+            </div>
+
+            {/* Trekking */}
+            <div className="rounded-[18px] border border-[rgba(127,184,156,0.16)] bg-[rgba(9,22,17,0.55)] p-[22px]">
+              <div className="flex items-center justify-between">
+                <p className="mono m-0 text-[10.5px] uppercase tracking-[0.14em] text-[rgba(233,228,218,0.45)]">
+                  Trekking
+                </p>
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#7FB89C]" />
+              </div>
+              <svg viewBox="0 0 280 96" className="mt-2.5 h-24 w-full">
+                <polyline
+                  points="8,84 48,60 84,68 128,34 168,46 216,16 272,40" fill="none" stroke="#7FB89C" strokeWidth="2"
+                  strokeLinejoin="round" strokeLinecap="round" className="draw-loop"
+                />
+                <circle cx="216" cy="16" r="3.5" fill="#0A1912" stroke="#E0A93B" strokeWidth="2" />
+                <text x="216" y="8" textAnchor="middle" fontSize="9" className="mono" fill="#E0A93B">ridge camp</text>
+              </svg>
+              <p className="disp mt-2 text-[25px] text-[#F3EFE6]">Trails with honest numbers.</p>
+              <p className="mt-1.5 text-[13.5px] text-[rgba(233,228,218,0.55)]">
+                Gain, exposure, water points and how long it really takes — graded by people who walked it.
+              </p>
+            </div>
+
+            {/* Connectivity */}
+            <div className="rounded-[18px] border border-[rgba(127,184,156,0.16)] bg-[rgba(9,22,17,0.55)] p-[22px]">
+              <div className="flex items-center justify-between">
+                <p className="mono m-0 text-[10.5px] uppercase tracking-[0.14em] text-[rgba(233,228,218,0.45)]">
+                  Connectivity
+                </p>
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#7FB89C]" />
+              </div>
+              <div className="mt-3.5 flex h-[76px] items-end gap-1.5">
+                {connectivityBars.map((b, i) => (
+                  <div
+                    key={i}
+                    className="bar-wave flex-1 rounded-t-[3px]"
+                    style={{
+                      height: b.h,
+                      background: b.c,
+                      ['--bar-dur' as string]: b.dur,
+                      ['--bar-delay' as string]: b.delay,
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="disp mt-3 text-[25px] text-[#F3EFE6]">WiFi you can bet a call on.</p>
+              <p className="mt-1.5 text-[13.5px] text-[rgba(233,228,218,0.55)]">
+                Speed tests run on-site, per stay and per town — down, up, and whether it survives a power cut.
+              </p>
+            </div>
+
+            {/* Weather & feel */}
+            <div className="relative overflow-hidden rounded-[18px] border border-[rgba(127,184,156,0.16)] bg-[rgba(9,22,17,0.55)] p-[22px]">
+              <svg viewBox="0 0 300 110" preserveAspectRatio="none" className="absolute bottom-0 left-0 w-full opacity-50">
+                <path d="M0 110 L0 70 L60 30 L110 62 L170 18 L230 58 L300 34 L300 110 Z" fill="#122A20" />
+                <path d="M0 110 L0 88 L50 60 L120 84 L190 52 L260 80 L300 66 L300 110 Z" fill="#1C5240" opacity="0.6" />
+                <g className="cloud-drift">
+                  <ellipse cx="80" cy="26" rx="26" ry="7" fill="rgba(233,228,218,0.12)" />
+                  <ellipse cx="210" cy="14" rx="34" ry="8" fill="rgba(233,228,218,0.09)" />
+                </g>
+              </svg>
+              <div className="relative flex items-center justify-between">
+                <p className="mono m-0 text-[10.5px] uppercase tracking-[0.14em] text-[rgba(233,228,218,0.45)]">
+                  Weather &amp; feel
+                </p>
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#E0A93B]" />
+              </div>
+              <p className="disp relative mt-[46px] text-[25px] text-[#F3EFE6]">Know what the morning feels like.</p>
+              <p className="relative mt-1.5 text-[13.5px] text-[rgba(233,228,218,0.55)]">
+                Fog windows, monsoon months, the week the rhododendrons open — season data tuned to feeling, not just forecast.
+              </p>
+            </div>
+
+            {/* Wildlife log - real WILDLIFE.ts entries, no fabricated timestamps */}
+            <div className="rounded-[18px] border border-[rgba(127,184,156,0.16)] bg-[rgba(9,22,17,0.55)] p-[22px]">
+              <div className="flex items-center justify-between">
+                <p className="mono m-0 text-[10.5px] uppercase tracking-[0.14em] text-[rgba(233,228,218,0.45)]">
+                  Wildlife log
+                </p>
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#7FB89C]" />
+              </div>
+              <div className="mt-3.5 flex flex-col gap-2">
+                {wildlifeLog.map((s) => (
+                  <div
+                    key={s.animal + s.where}
+                    className="flex items-center justify-between rounded-[10px] border border-white/[0.08] px-3 py-2"
+                  >
+                    <span className="mono text-xs text-[#E9E4DA]">{s.animal}</span>
+                    <span className="mono text-[10.5px] text-[rgba(233,228,218,0.42)]">{s.where}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="disp mt-3 text-[25px] text-[#F3EFE6]">You&apos;re a guest here.</p>
+              <p className="mt-1.5 text-[13.5px] text-[rgba(233,228,218,0.55)]">
+                Protected-area sightings and corridor notes, so you slow down where the forest crosses the road.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── DESTINATIONS ─────────────────────────────────────────────────── */}
+        <section>
+          <div className="mb-[22px] flex items-end justify-between">
+            <div>
+              <p className="mono m-0 text-[11px] uppercase tracking-[0.16em] text-[#7FB89C]">Where to perch</p>
+              <h2 className="disp mt-2.5 text-[clamp(32px,4.2vw,46px)] text-[#F3EFE6]">
                 {settings.featured_heading?.trim() || SITE_DEFAULTS.featuredHeading}
               </h2>
             </div>
-            <Link href="/destinations" className="hidden text-sm font-medium text-[var(--brand)] hover:text-[var(--brand-deep)] sm:block">
-              View all →
+            <Link href="/destinations" className="mono text-[12.5px] text-[#7FB89C]">
+              All {destCount} →
             </Link>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredList.map((d, i) => {
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
+            {featuredList.map((d) => {
               const wifi = wifiBySlug[d.slug]
               const img = destinationImage(d.slug)
               return (
-                <Tilt key={d.slug} className="h-full">
                 <Link
+                  key={d.slug}
                   href={`/destinations/${d.slug}`}
-                  className={`card card-hover rise group flex h-full flex-col overflow-hidden delay-${Math.min(i + 1, 4)}`}
+                  className="group relative block h-[300px] overflow-hidden rounded-[18px] border border-[rgba(127,184,156,0.16)] transition-transform duration-300 hover:-translate-y-1"
                 >
-                  <div className={`relative h-40 overflow-hidden bg-gradient-to-br ${elevationTone(d.elevationM)}`}>
-                    {img ? (
-                      <Image
-                        src={img.thumbUrl}
-                        alt={d.name}
-                        fill
-                        priority={i < 3}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : null}
-                    {/* Scrim keeps the white text legible over any photo. */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/25" />
-                    <div className="relative flex h-full flex-col justify-between p-5">
-                      <div className="flex items-start justify-between">
-                        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/70">
-                          {d.state}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <WeatherChip weather={weatherBySlug[d.slug]} />
-                          <span className="rounded-full bg-black/30 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-                            {d.elevationM.toLocaleString()}m
-                          </span>
-                        </div>
-                      </div>
-                      <h3 className="font-display text-2xl text-white drop-shadow-sm">{d.name}</h3>
+                  {img ? (
+                    <Image
+                      src={img.thumbUrl}
+                      alt={d.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover saturate-[0.8]"
+                    />
+                  ) : null}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[rgba(9,22,17,0.95)] via-[rgba(9,22,17,0.25)] to-[rgba(9,22,17,0.35)]" />
+                  <div className="relative flex h-full flex-col justify-between p-4">
+                    <div className="flex items-start justify-between">
+                      <span className="mono text-[9.5px] uppercase tracking-[0.14em] text-white/60">{d.state}</span>
+                      <span className="mono rounded-full border border-white/25 bg-[rgba(9,22,17,0.5)] px-2.5 py-0.5 text-[10.5px] text-[#E9E4DA] backdrop-blur-sm">
+                        {d.elevationM.toLocaleString()}m
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="flex flex-1 flex-col space-y-3 p-5">
-                    <p className="line-clamp-2 text-sm leading-relaxed text-[var(--ink-soft)]">
-                      {d.summary}
-                    </p>
-                    <div className="mt-auto flex items-center justify-between pt-1">
-                      {wifi ? (
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)]">
-                          <span className="h-2 w-2 rounded-full bg-[var(--brand-mint)]" />
-                          {wifi.avg_download_mbps} Mbps avg
-                        </span>
-                      ) : (
-                        <span className="text-sm text-[var(--ink-soft)]">Best: {d.bestSeason.split('(')[0].trim()}</span>
-                      )}
-                      <span className="text-[var(--line)] transition-colors group-hover:text-[var(--brand)]">→</span>
+                    <div>
+                      <h3 className="disp text-[27px] text-[#F3EFE6]">{d.name}</h3>
+                      <p className="mono mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-[rgba(127,184,156,0.25)] bg-[rgba(127,184,156,0.14)] px-2.5 py-1 text-[10.5px] text-[#A5CDB8]">
+                        {wifi?.avg_download_mbps != null ? `${wifi.avg_download_mbps} Mbps avg` : `Best: ${d.bestSeason.split('(')[0].trim()}`}
+                      </p>
                     </div>
                   </div>
                 </Link>
-                </Tilt>
               )
             })}
           </div>
         </section>
 
-        {/* ─── EV CHARGING TEASER ───────────────────────────────────────────── */}
-        <Reveal>
-        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--ink)] p-8 shadow-[var(--elev-lg)] sm:p-12">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-64 w-64 rounded-full bg-[var(--brand-gold)] opacity-10 blur-[100px]" />
-          <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
-            <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand-gold)]">New</p>
-              <h2 className="font-display text-3xl tracking-tight text-white sm:text-4xl">
-                {/* Unset renders the original two-piece heading, italic mint answer and
-                    all. A set value is one plain run of text - the honest reading of a
-                    single text field. */}
-                {settings.ev_heading?.trim() || (
-                  <>
-                    Driving electric? <span className="italic text-[var(--brand-mint)]">We point you to the live maps.</span>
-                  </>
-                )}
-              </h2>
-              <p className="max-w-md text-white/65">
+        {/* ─── STAYS + EV ───────────────────────────────────────────────────── */}
+        <section>
+          <p className="mono mb-4 text-[11px] uppercase tracking-[0.16em] text-[#7FB89C]">
+            Once you&apos;ve picked a town
+          </p>
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+            <Link
+              href="/stays"
+              className="block rounded-[18px] border border-[rgba(127,184,156,0.16)] bg-[rgba(9,22,17,0.55)] p-6"
+            >
+              <p className="mono m-0 flex items-center gap-2 text-[10.5px] uppercase tracking-[0.14em] text-[#7FB89C]">
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#7FB89C]" />
+                Stays · {STAY_TOTALS.total.toLocaleString()}+ mapped
+              </p>
+              <h3 className="disp mb-1.5 mt-2.5 text-[26px] text-[#F3EFE6]">A desk with a view, vetted.</h3>
+              <p className="m-0 text-[13.5px] text-[rgba(233,228,218,0.55)]">
+                Homestays and hotels filtered by tested WiFi, workspace and winter heating.
+              </p>
+              <span className="mono mt-3.5 inline-block text-[12.5px] text-[#7FB89C]">Search stays →</span>
+            </Link>
+            <Link
+              href="/charging"
+              className="block rounded-[18px] border border-[rgba(224,169,59,0.2)] bg-[rgba(9,22,17,0.55)] p-6"
+            >
+              <p className="mono m-0 flex items-center gap-2 text-[10.5px] uppercase tracking-[0.14em] text-[#E0A93B]">
+                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[#E0A93B]" />
+                EV charging · {EV_NETWORKS.length} networks
+              </p>
+              <h3 className="disp mb-1.5 mt-2.5 text-[26px] text-[#F3EFE6]">
+                {settings.ev_heading?.trim() || SITE_DEFAULTS.evHeading}
+              </h3>
+              <p className="m-0 text-[13.5px] text-[rgba(233,228,218,0.55)]">
                 {settings.ev_body?.trim() || SITE_DEFAULTS.evBody}
               </p>
-              <Link href="/charging" className="mt-2 inline-flex items-center gap-1.5 rounded-[0.85rem] bg-[var(--brand-gold)] px-5 py-2.5 text-sm font-semibold text-[var(--space)] shadow-[0_10px_26px_-8px_rgb(224_169_59/0.55)] transition hover:-translate-y-0.5 hover:brightness-105">
-                See the charging maps →
-              </Link>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { n: EV_NETWORKS.length, l: 'Networks' },
-                { n: EV_LIVE_MAPS.length, l: 'All-in-one maps' },
-                { n: 'Live', l: 'Always current' },
-              ].map((s) => (
-                <div key={s.l} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-                  <p className="font-display text-3xl text-white">{s.n}</p>
-                  <p className="mt-1 text-[11px] leading-tight text-white/50">{s.l}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        </Reveal>
-
-        {/* ─── HOW IT WORKS ─────────────────────────────────────────────────── */}
-        <Reveal>
-        <section className="space-y-8">
-          <div className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">How it works</p>
-            <h2 className="mt-1.5 font-display text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
-              One trip report does double duty.
-            </h2>
-          </div>
-          <div className="grid gap-px overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--line)] shadow-[var(--elev-md)] sm:grid-cols-3">
-            {[
-              { icon: '✶', title: 'Fill it once', body: 'A single report feeds two places at once: the destination page (WiFi, cafes, where to charge) and the route page (the drive, the ghat sections, where to fuel up).' },
-              { icon: '◷', title: 'You see the date', body: 'Every WiFi reading shows when it was taken and on which carrier. A 40 Mbps note from last month means something. A screenshot from 2019 does not.' },
-              { icon: '⤳', title: 'However you got there', body: 'Drove, rode, took the bus, came by train. Reports are split by mode, so a biker reads biker notes and a driver reads driver notes.' },
-            ].map((item) => (
-              <div key={item.title} className="group/cell space-y-3 bg-[var(--surface)] p-7 transition-colors duration-300 hover:bg-[var(--paper)]">
-                <span className="inline-block font-display text-3xl text-[var(--brand)] transition-transform duration-300 ease-[cubic-bezier(0.34,1.4,0.5,1)] group-hover/cell:-translate-y-0.5">{item.icon}</span>
-                <p className="font-semibold tracking-[-0.01em] text-[var(--ink)]">{item.title}</p>
-                <p className="text-sm leading-relaxed text-[var(--ink-soft)]">{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-        </Reveal>
-
-        {/* ─── CTA ──────────────────────────────────────────────────────────── */}
-        <Reveal>
-        <section className="on-dark grain relative overflow-hidden rounded-3xl bg-[var(--brand)] px-8 py-12 shadow-[var(--elev-lg)] sm:px-12">
-          <svg viewBox="0 0 200 200" className="pointer-events-none absolute right-0 top-0 h-full opacity-[0.08]" aria-hidden="true">
-            <path d="M0,200 L50,90 L90,140 L140,40 L180,100 L200,30 L200,200 Z" fill="white" />
-          </svg>
-          <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-white">
-              <h2 className="font-display text-3xl tracking-tight sm:text-4xl">
-                {settings.cta_heading?.trim() || SITE_DEFAULTS.ctaHeading}
-              </h2>
-              <p className="mt-2 max-w-md text-white/75">
-                {settings.cta_body?.trim() || SITE_DEFAULTS.ctaBody}
-              </p>
-            </div>
-            <Link href="/contribute" className="btn-ghost shrink-0 text-base">
-              Add a trip report →
+              <span className="mono mt-3.5 inline-block text-[12.5px] text-[#E0A93B]">See charging maps →</span>
             </Link>
           </div>
         </section>
-        </Reveal>
+
+        {/* ─── CONTRIBUTE ───────────────────────────────────────────────────── */}
+        <section
+          className="rounded-[20px] border border-[rgba(127,184,156,0.16)] px-6 py-14 text-center sm:px-8"
+          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(28,82,64,0.5), rgba(9,22,17,0.4) 70%)' }}
+        >
+          <p className="mono m-0 text-[11px] uppercase tracking-[0.16em] text-[#7FB89C]">
+            Built by the people on the road
+          </p>
+          <h2 className="disp mx-auto mt-3 max-w-[580px] text-[clamp(28px,4vw,42px)] text-[#F3EFE6]">
+            {settings.cta_heading?.trim() || SITE_DEFAULTS.ctaHeading}
+          </h2>
+          <p className="mx-auto mt-3.5 max-w-[440px] text-[14.5px] text-[rgba(233,228,218,0.6)]">
+            {settings.cta_body?.trim() || SITE_DEFAULTS.ctaBody}
+          </p>
+          <Link
+            href="/contribute"
+            className="mt-6 inline-block rounded-xl bg-[#E0A93B] px-6 py-[13px] text-[15px] font-semibold text-[#0A1912]"
+          >
+            Add a trip report →
+          </Link>
+        </section>
       </div>
     </div>
   )

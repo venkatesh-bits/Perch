@@ -30,25 +30,17 @@ export const SITE_DEFAULTS = {
   heroTitle: 'Work from anywhere.',
   heroTitleAccent: 'Worry about nothing.',
   heroSubhead:
-    'Will the WiFi hold for a call? Is the ghat road washed out? Where do you charge an EV past Manali? We track the things that decide whether a hill town works for a few weeks, from the Western Ghats up to Ladakh.',
+    'Tested WiFi, real road status, stays, treks, seasons and the animals you share the road with — Western Ghats to the Himalaya, checked by people who actually went.',
 
   featuredEyebrow: 'Where to perch',
-  featuredHeading: 'Towns people keep going back to',
+  featuredHeading: "Pick a hill. We've done the homework.",
 
-  /**
-   * The live heading is two pieces - a plain question and an italic mint answer.
-   * This flattened string is the default shown in the admin panel; setting it
-   * replaces the whole heading with one run of text, which is the honest
-   * behaviour for a single text field. Leave it blank and the two-piece markup
-   * in app/page.tsx renders untouched.
-   */
-  evHeading: 'Driving electric? We point you to the live maps.',
-  evBody:
-    'A hand-drawn charger map goes stale in a week, so we don’t keep one. We send you to the maps the operators keep current themselves - PlugShare and the government e-AMRIT map for everything at once, plus each network from Tata Power and Ather to ChargeMOD.',
+  evHeading: 'Charge past the last town.',
+  evBody: 'Every operator map that stays current — from the plains to the passes.',
 
-  ctaHeading: 'Just back from the hills?',
+  ctaHeading: "We don't take a cut. So this only works if you write it down.",
   ctaBody:
-    'Run a speed test, jot down how the road was. Three minutes from you saves the next person a ruined work week.',
+    'Ran a speed test? Hit a closed pass? Found a stay that actually has a desk? Thirty seconds of typing saves the next rider a day.',
 
   footerBlurb:
     'Work from anywhere. Worry about nothing. The practical stuff remote workers and road trippers need before heading into the Indian hills, Western Ghats to the Himalaya.',
